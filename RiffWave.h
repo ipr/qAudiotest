@@ -4,6 +4,8 @@
 //
 // (c) Ilkka Prusi, 2011
 //
+// See also: https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
+//
 
 #ifndef RIFFWAVE_H
 #define RIFFWAVE_H

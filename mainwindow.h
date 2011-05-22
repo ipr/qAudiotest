@@ -24,12 +24,18 @@ signals:
 	void FileSelection(QString szFile);
 	
 private slots:
-	void on_actionFile_triggered();
 	void onFileSelected(QString szFile);
+	
+	void onAudioState(QAudio::State);
+	
+	void on_actionFile_triggered();
+	void on_actionPlay_triggered();
+	void on_actionStop_triggered();
+	
 	
 private:
     Ui::MainWindow *ui;
-	QFile m_File;
+	//QFile m_File;
 	QAudioOutput *m_pAudioOut;
 	
 	WavFile *m_pWavFile;

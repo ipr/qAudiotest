@@ -13,8 +13,6 @@ DEFINES += _CRT_SECURE_NO_WARNINGS
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    wavfile.cpp \
-    utils.cpp \
     FileType.cpp \
     MemoryMappedFile.cpp \
     IffContainer.cpp \
@@ -24,8 +22,6 @@ SOURCES += main.cpp\
     IffAiff.cpp
 
 HEADERS  += mainwindow.h \
-    wavfile.h \
-    utils.h \
     FileType.h \
     MemoryMappedFile.h \
     IffContainer.h \
