@@ -251,6 +251,8 @@ protected:
 protected:
 	void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 
+	double ExtendedToDouble(unsigned char value[10]);
+	
 	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	
 	virtual bool IsSupportedType(CIffHeader *pHeader)
@@ -292,6 +294,13 @@ public:
 	virtual long sampleSize()
 	{
 		return m_Common.sampleSize;
+	}
+	
+	virtual bool isSigned()
+	{
+		// always signed?
+		// (2's complement)
+		return true;
 	}
 	
 	// actual sample data

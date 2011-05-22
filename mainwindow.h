@@ -27,7 +27,8 @@ signals:
 private slots:
 	void onFileSelected(QString szFile);
 	
-	void onAudioState(QAudio::State);
+	void onAudioState(QAudio::State enState);
+	void onPlayNotify();
 	
 	void on_actionFile_triggered();
 	void on_actionPlay_triggered();

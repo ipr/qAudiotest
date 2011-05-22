@@ -38,6 +38,11 @@ void CRiffWave::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 			// Sample size
 			m_wBitsPerSample = Swap2((*((WORD*)pChunkData)));
 		}
+		else
+		{
+			// unknown format: check format for the additional fields
+			m_wBitsPerSample = 0;
+		}
 	}
 	else if (pChunk->m_iChunkID == MakeTag("INFO"))
 	{
@@ -51,11 +56,19 @@ void CRiffWave::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	else if (pChunk->m_iChunkID == MakeTag("slnt"))
 	{
 		// "silence" data?
-		DWORD dwSampleCount = Swap4((*((DWORD*)pChunkData)));
+		//DWORD dwSampleCount = Swap4((*((DWORD*)pChunkData)));
 	}
 	else if (pChunk->m_iChunkID == MakeTag("fact"))
 	{
+		// if this is given then decompression may be required before playing?
+		// (this should describe it to us..)
 	}
+	/*
+	else if (pChunk->m_iChunkID == MakeTag("cue "))
+	{
+		CuePoint *pCue = (CuePoint*)pChunkData;
+	}
+	*/
 	else if (pChunk->m_iChunkID == MakeTag("data"))
 	{
 		// decode when actual playback

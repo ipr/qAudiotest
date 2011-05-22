@@ -147,6 +147,12 @@ public:
 		return 8;
 	}
 	
+	virtual bool isSigned()
+	{
+		// always signed
+		return true;
+	}
+	
 	// actual sample data
 	virtual unsigned char *sampleData()
 	{

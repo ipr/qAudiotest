@@ -29,12 +29,26 @@ void CIffAiff::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		Sound.blockSize = Swap4(pSound->blockSize);
 		uint8_t *pData = (uint8_t*)(pSound +1);
 		
+		// when fixed-size data with offset defined
+		if (Sound.offset > 0)
+		{
+			pData = pData + Sound.offset;
+		}
+	
 		// TODO: size of actual data?
 		//uint8_t *pSampleData = new uint8_t[m_Common.sampleSize];
 		//::memcpy(pSampleData, pData, m_Common.sampleSize);
 		//pSound = pChunkData + sizeof(SoundDataChunk) + m_Common.sampleSize;
 	}
-	
+}
+
+// convert 80-bit extended-precision value ('long double')
+// to 64-bit double since Visual C++ does not support it..
+// (many CPU support it though..
+double CIffAiff::ExtendedToDouble(unsigned char value[10])
+{
+	//TODO:
+	return 0;
 }
 
 void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
@@ -49,8 +63,9 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		m_Common.numSampleFrames = Swap4(pComm->numSampleFrames);
 		m_Common.sampleSize = Swap2(pComm->sampleSize);
 		
-		// TODO: convert 'sampleRate' from 'extended' (80-bit long double) to 64-bit double
+		// note: convert 'sampleRate' from 'extended' (80-bit long double) to 64-bit double
 		// since Visual C++ does not support it..
+		m_Common.sampleRate = ExtendedToDouble(pComm->sampleRate);
 	}
 	else if (pChunk->m_iChunkID == MakeTag("SSND"))
 	{

@@ -32,11 +32,21 @@ typedef uint16_t UWORD;
 //typedef int32_t LONG;
 //typedef uint32_t ULONG;
 
-/* Format tag (wFormatTag) supported values. Also affects additions fields in fmt-chunk */
-#define fmt_WAVE_FORMAT_PCM (0x0001)  /* Microsoft Pulse Code Modulation (PCM) format */
-#define fmt_IBM_FORMAT_MULAW (0x0101) /* IBM mu-law format */
-#define fmt_IBM_FORMAT_ALAW (0x0102)  /* IBM a-law format */
-#define fmt_IBM_FORMAT_ADPCM (0x0103) /* IBM AVC Adaptive Differential Pulse Code Modulation format */
+/* 
+  Format tag (wFormatTag) supported values. Also affects additions fields in fmt-chunk.
+  Some found in RIFF-WAVE spec, others by googling..
+*/
+#define fmt_WAVE_FORMAT_UNKNOWN         (0x0000) /* unused? */
+#define fmt_WAVE_FORMAT_PCM             (0x0001)  /* Microsoft Pulse Code Modulation (PCM) format */
+#define fmt_WAVE_FORMAT_ADPCM           (0x0002)
+#define fmt_WAVE_FORMAT_ALAW            (0x0006)
+#define fmt_WAVE_FORMAT_MULAW           (0x0007)
+#define fmt_WAVE_FORMAT_OKI_ADPCM       (0x0010)
+#define fmt_WAVE_FORMAT_DIGISTD         (0x0015)
+#define fmt_WAVE_FORMAT_DIGIFIX         (0x0016)
+#define fmt_IBM_FORMAT_MULAW            (0x0101) /* IBM mu-law format */
+#define fmt_IBM_FORMAT_ALAW             (0x0102)  /* IBM a-law format */
+#define fmt_IBM_FORMAT_ADPCM            (0x0103) /* IBM AVC Adaptive Differential Pulse Code Modulation format */
 
 
 // from format specifications,
@@ -125,6 +135,17 @@ public:
 		// only when format is: fmt_WAVE_FORMAT_PCM
 		// (other cases, see formats..)
 		return m_wBitsPerSample;
+	}
+
+	virtual bool isSigned()
+	{
+		if (m_wBitsPerSample <= 8)
+		{
+			// unsigned ?
+			return false;
+		}
+		// 16 or more
+		return true;
 	}
 	
 	// actual sample data

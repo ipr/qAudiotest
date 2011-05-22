@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <string>
 
+// TODO: inherit from QIODevice?
+
 class AudioFile
 {
 protected:
@@ -36,6 +38,9 @@ public:
 	virtual long sampleSize() = 0; // size of single sample
 
 	// TODO: ?
+	//virtual bool isInterleaved() = 0; // is interleaved channel data?
+	//virtual bool isStereo() = 0; // is stereo data? (from channel count only..?)
+	virtual bool isSigned() = 0; // is signed data?
 	//virtual bool isIntegerSample() = 0; // is sample data integers (floats if false)
 	//virtual bool isSignedIntegerSample() = 0; // is signed/unsigned
 	//virtual long sampleDigitSize() = 0; // sizeof(digit) (byte/short/float..)

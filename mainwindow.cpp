@@ -116,34 +116,45 @@ void MainWindow::onFileSelected(QString szFile)
 	format.setSampleSize(m_pAudioFile->sampleSize());
 	
 	// TODO: we may have 8-bit signed int..
-	if (m_pAudioFile->sampleSize() <= 8)
-	{
-		format.setSampleType(QAudioFormat::UnSignedInt);
-	}
-	else
+	//if (m_pAudioFile->sampleSize() > 8)
+	if (m_pAudioFile->isSigned() == true)
 	{
 		format.setSampleType(QAudioFormat::SignedInt);
 	}
+	else
+	{
+		format.setSampleType(QAudioFormat::UnSignedInt);
+	}
+
+	double nFrame = ( format.channels() * format.sampleSize() / 8 );
+    double usInBuffer = ( (m_pAudioFile->sampleDataSize()*1000000ui64) / nFrame ) / format.frequency();
+	ui->horizontalSlider->setMaximum(usInBuffer/1000); // -> msec
+	ui->horizontalSlider->setMinimum(0);
+	ui->horizontalSlider->setValue(0);
 	
 	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
 	if (info.isFormatSupported(format)) 
 	{
 		m_pAudioOut = new QAudioOutput(format, this);
 		connect(m_pAudioOut, SIGNAL(stateChanged(QAudio::State)), this, SLOT(onAudioState(QAudio::State)));
+		connect(m_pAudioOut, SIGNAL(notify()), this, SLOT(onPlayNotify()));
+
+		// pull-mode (implement the interface needed in audio-file?)
 		//m_pAudioOut->start(m_pAudioFile);
 
+		m_pAudioOut->setNotifyInterval(250);
 		
-		// test: push-mode
+		// test: push-mode (need threading to work correctly)
 		QIODevice *pDevOut = m_pAudioOut->start();
+
+		
+		// TODO: make buffering of file anyway instead of memory-mapped?
+		// experiencing "pauses" under IO-load on Windows..
+		// or just make thread higher-priority?
+		
 		
 		char *pData = (char*)m_pAudioFile->sampleData();
 		qint64 nMax = m_pAudioFile->sampleDataSize();
-
-		// test
-		ui->horizontalSlider->setMinimum(0);
-		ui->horizontalSlider->setMaximum(nMax/1024);
-		ui->horizontalSlider->setValue(0);
-		
 		while (nMax > 0)
 		{
 			qint64 nWritten = pDevOut->write(pData, nMax);
@@ -153,39 +164,33 @@ void MainWindow::onFileSelected(QString szFile)
 			}
 			nMax -= nWritten;
 			pData = pData + nWritten;
-			
-			// test only..
-			ui->horizontalSlider->setValue(nWritten/1024);
 		}
 	}
-	
 		
-/*	
-	QAudioFormat format;
-	// Set up the format, eg.
-	format.setFrequency(8000);
-	format.setChannels(1);
-	format.setSampleSize(8);
-	format.setCodec("audio/pcm");
-	format.setByteOrder(QAudioFormat::LittleEndian);
-	format.setSampleType(QAudioFormat::UnSignedInt);
-   
-	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-	if (!info.isFormatSupported(format)) 
-	{
-		qWarning()<<"raw audio format not supported by backend, cannot play audio.";
-		return;
-	}
-   
-	m_pAudioOut = new QAudioOutput(format, this);
-	//connect(m_pAudioOut, SIGNAL(stateChanged(QAudio::State)), SLOT(finishedPlaying(QAudio::State)));
-	m_pAudioOut->start(&m_File);
-*/
-
 }
 
-void MainWindow::onAudioState(QAudio::State)
+void MainWindow::onAudioState(QAudio::State enState)
 {
+	if (enState == QAudio::ActiveState)
+	{
+		ui->horizontalSlider->show();
+	}
+	else if (enState == QAudio::StoppedState)
+	{
+		// show that we stopped
+		ui->horizontalSlider->hide();
+	}
+}
+
+// triggered on certain intervals (set to output-device)
+void MainWindow::onPlayNotify()
+{
+	// temp! testing only..
+	// !! slow way
+	//int iInterval = m_pAudioOut->notifyInterval();
+	int iValue = ui->horizontalSlider->value();
+	ui->horizontalSlider->setValue(iValue + 250);
+	// /temp!
 }
 
 void MainWindow::on_actionFile_triggered()
