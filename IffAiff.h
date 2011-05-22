@@ -17,7 +17,7 @@
 
 // std::string, for keeping sample&copyright descriptions
 #include <string>
-
+#include <vector>
 
 /* playMode specifies which type of looping is to be performed (INST) */
 #define NoLooping               0
@@ -27,6 +27,11 @@
 
 // from format specifications,
 // note one-byte alignment in struct
+
+/*
+  note: empty array on struct is error on some compiler (Visual C++ for one)
+  so need to change from specification-definition to something else..
+*/
 
 #pragma pack(push, 1)
 
@@ -65,7 +70,8 @@ typedef short   MarkerId;
   A pad byte can be added at the end of the text to accomplish this. 
   This pad byte is not reflected in the count.
 */
-
+// -> see class PascalString
+/*
 typedef struct
 {
 	BYTE                nameLength;
@@ -75,13 +81,16 @@ typedef struct
 typedef struct {
     MarkerId            id;
     unsigned long       position;
-    pstring             markerName;
+    //pstring             markerName;
 } Marker;
+// -> followed by PascalString
 
 typedef struct {
     unsigned short      numMarkers;
     Marker              Markers[];
 } MarkerChunk;
+// -> 
+*/
 
 //// INST
 
@@ -112,7 +121,9 @@ typedef struct {
 
 //// AESD
 
-typedef struct {
+// just fixed-length array of data
+typedef struct 
+{
     unsigned char       AESChannelStatusData[24];
 } AudioRecordingChunk;
 
@@ -130,16 +141,84 @@ typedef struct {
     unsigned long       timeStamp;
     MarkerId            marker;
     unsigned short      count;
-    char                text;
-} Comment;
+    //char                text;
+} CommentFields;
 
+/*
 typedef struct {
     unsigned short      numComments;
     Comment             comments[];
 } CommentsChunk;
+*/
 
 #pragma pack(pop)
 
+// pstring handling,
+// single byte as length followed by character-data
+class PascalString
+{
+public:
+	PascalString(void)
+	    : m_stringlen(0)
+	    , m_szString()
+	{}
+	~PascalString(void)
+	{}
+	
+	// when used in marker 'pstring'
+	void ReadBuffer(const unsigned char *pData)
+	{
+		m_stringlen = pData[0]; // stored as single byte
+		m_szString.assign(pData +1, m_stringlen);
+	}
+
+	// when in comment as longer string
+	void ReadBuffer(const unsigned short count, const unsigned char *pData)
+	{
+		m_stringlen = count;
+		m_szString.assign(pData, m_stringlen);
+	}
+	
+	// stored as single byte
+	unsigned short m_stringlen;
+	std::string m_szString;
+};
+
+class Marker
+{
+public:
+	Marker(void)
+	    : id(0)
+	    , position(0)
+	    , string()
+	{}
+	~Marker(void)
+	{}
+	
+    MarkerId            id;
+    unsigned long       position;
+	PascalString        string;
+};
+
+class Comment
+{
+public:
+	Comment(void)
+	    : timeStamp(0)
+	    , marker(0)
+	    , string()
+	{}
+	~Comment(void)
+	{}
+	
+	// timestamp:
+	// - on Amiga, seconds since January 1, 1978
+	// - on Apple, seconds since January 1, 1904
+    unsigned long       timeStamp;
+    MarkerId            marker; // link to Marker
+	PascalString        string;
+	
+};
 
 class CIffAiff : public CIffContainer
 {
@@ -152,6 +231,12 @@ protected:
 	std::string m_szAuthor; // AUTH
 	std::string m_szAnnotations; // ANNO
 	std::string m_szCopyright; // (c)
+	
+	typedef std::vector<Marker> tMarkerList;
+	tMarkerList m_Markers;
+	
+	typedef std::vector<Comment> tCommentList;
+	tCommentList m_Comments;
 	
 	
 protected:

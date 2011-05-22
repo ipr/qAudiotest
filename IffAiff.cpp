@@ -25,13 +25,28 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	}
 	else if (pChunk->m_iChunkID == MakeTag("MARK"))
 	{
+		unsigned short numMarkers = Swap2((*((UWORD*)pChunkData)));
+		pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset + sizeof(UWORD), pFile);
+		
+		for (int i = 0; i < numMarkers; i++)
+		{
+			Marker m;
+			m.id = Swap2((*((UWORD*)pChunkData)));
+			m.position = Swap4((*((long*)pChunkData +2));
+			m.string.ReadBuffer(pChunkData +6);
+			
+			pChunkData = (pChunkData + (6 + m.string.m_stringlen +1));
+			m_Markers.push_back(m);
+		}
 	}
 	else if (pChunk->m_iChunkID == MakeTag("MIDI"))
 	{
-		//pChunkData = mididata;
+		// just array of data
+		//mididata = pChunkData;
 	}
 	else if (pChunk->m_iChunkID == MakeTag("AESD"))
 	{
+		// fixed-size array of data
 		AudioRecordingChunk *pAesd = (AudioRecordingChunk*)pChunkData;
 	}
 	else if (pChunk->m_iChunkID == MakeTag("APPL"))
@@ -41,6 +56,22 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	else if (pChunk->m_iChunkID == MakeTag("COMT"))
 	{
 		// Comments
+		unsigned short numComments = Swap2((*((UWORD*)pChunkData)));
+		pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset + sizeof(UWORD), pFile);
+		
+		// array of structs
+		for (int i = 0; i < numComments; i++)
+		{
+			CommentFields *pComm = (CommentFields*)pChunkData;
+			Comment c;
+			c.timeStamp = Swap4(pComm->timeStamp);
+			c.marker = Swap2(pComm->marker);
+			c.string.ReadBuffer(Swap2(pComm->count), pChunkData+sizeof(CommentFields));
+			
+			pChunkData = (pChunkData + (sizeof(CommentFields) + m.string.m_stringlen));
+			m_Comments.push_back(c);
+		}
+		
 	}
 	else if (pChunk->m_iChunkID == MakeTag("NAME"))
 	{
