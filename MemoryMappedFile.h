@@ -64,7 +64,7 @@ public:
 	void Destroy();
 
 	// is properly created
-	bool IsCreated()
+	bool IsCreated() const
 	{
 		if (m_i64FileSize > 0
 			&& m_pFileView != NULL)

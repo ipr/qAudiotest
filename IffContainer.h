@@ -290,7 +290,30 @@ protected:
 	}
     */
 
+	// for inherited classes, get access to private member
+	CIffHeader *GetHeader() const
+	{
+		return m_pHeader;
+	}
 
+	// use MakeTag("...") and call this in inherited class
+	CIffChunk *GetChunkById(const uint32_t uiFourccID) const
+	{
+		CIffHeader *pHead = GetHeader();
+		CIffChunk *pChunk = pHead->m_pFirst;
+		while (pChunk != nullptr)
+		{
+			if (pChunk->m_iChunkID == uiFourccID)
+			{
+				return pChunk;
+			}
+			pChunk = pChunk->m_pNext;
+		}
+		// not found, incomplete file?
+		return nullptr;
+	}
+	
+	
 public:
 	CIffContainer(void);
 	virtual ~CIffContainer(void);

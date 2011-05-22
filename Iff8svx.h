@@ -108,6 +108,11 @@ protected:
 		}
 		return false;
 	}
+
+	CIffChunk *GetDataChunk() const
+	{
+		return GetChunkById(MakeTag("BODY"));
+	}
 	
 public:
 	CIff8svx(void);
@@ -115,6 +120,57 @@ public:
 
 	bool ParseFile(LPCTSTR szPathName);
 
+	bool IsBigEndian() const
+	{
+		return true;
+	}
+	/*
+	long channelCount() const
+	{
+		return m_Common.numChannels;
+	}
+ */
+	unsigned long sampleRate() const
+	{
+		return m_VoiceHeader.samplesPerSec;
+	}
+	long sampleSize() const
+	{
+		// 8-bit only
+		return 8;
+	}
+	
+	// actual sample data
+	unsigned char *sampleData()
+	{
+		// locate datachunk and information
+		CIffChunk *pDataChunk = GetDataChunk();
+		if (pDataChunk == nullptr)
+		{
+			return nullptr;
+		}
+
+		// file was closed? -> error
+		if (m_File.IsCreated() == false)
+		{
+			return nullptr;
+		}
+		
+		// locate actual data
+		return CIffContainer::GetViewByOffset(pDataChunk->m_iOffset, m_File);
+	}
+	
+	// total size of sample data
+	unsigned long sampleDataSize()
+	{
+		// locate datachunk and information
+		CIffChunk *pDataChunk = GetDataChunk();
+		if (pDataChunk == nullptr)
+		{
+			return 0;
+		}
+		return pDataChunk->m_iChunkSize;
+	}
 };
 
 #endif // ifndef _IFF8SVX_H_

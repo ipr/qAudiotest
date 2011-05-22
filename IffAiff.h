@@ -148,14 +148,14 @@ public:
 	void ReadBuffer(const unsigned char *pData)
 	{
 		m_stringlen = pData[0]; // stored as single byte
-		m_szString.assign(pData +1, m_stringlen);
+		m_szString.assign((const char *)pData +1, m_stringlen);
 	}
 
 	// when in comment as longer string
 	void ReadBuffer(const unsigned short count, const unsigned char *pData)
 	{
 		m_stringlen = count;
-		m_szString.assign(pData, m_stringlen);
+		m_szString.assign((const char *)pData, m_stringlen);
 	}
 	
 	// stored as single byte
@@ -256,7 +256,11 @@ protected:
 		}
 		return false;
 	}
-	
+
+	CIffChunk *GetDataChunk() const
+	{
+		return GetChunkById(MakeTag("SSND"));
+	}
 	
 public:
 	CIffAiff(void);
@@ -264,6 +268,58 @@ public:
 
 	bool ParseFile(LPCTSTR szPathName);
 
+	// values to use for QAudioFormat or similar
+	//codec (PCM-coded)
+	
+	bool IsBigEndian() const
+	{
+		return true;
+	}
+	long channelCount() const
+	{
+		return m_Common.numChannels;
+	}
+	unsigned long sampleRate() const
+	{
+		// TODO: some conversion..
+		return m_Common.sampleRate;
+	}
+	long sampleSize() const
+	{
+		return m_Common.sampleSize;
+	}
+	
+	// actual sample data
+	unsigned char *sampleData()
+	{
+		// locate datachunk and information
+		CIffChunk *pDataChunk = GetDataChunk();
+		if (pDataChunk == nullptr)
+		{
+			return nullptr;
+		}
+
+		// file was closed? -> error
+		if (m_File.IsCreated() == false)
+		{
+			return nullptr;
+		}
+		
+		// locate actual data
+		return CIffContainer::GetViewByOffset(pDataChunk->m_iOffset, m_File);
+	}
+	
+	// total size of sample data
+	unsigned long sampleDataSize()
+	{
+		// locate datachunk and information
+		CIffChunk *pDataChunk = GetDataChunk();
+		if (pDataChunk == nullptr)
+		{
+			return 0;
+		}
+		return pDataChunk->m_iChunkSize;
+	}
 };
 
 #endif // IFFAIFF_H

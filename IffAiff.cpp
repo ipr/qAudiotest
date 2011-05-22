@@ -83,13 +83,13 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	{
 		// fixed-size array of data for user convenience (24 bytes)
 		//AudioRecordingChunk *pAesd = (AudioRecordingChunk*)pChunkData;
-		::memcpy(m_AesdChunk, pChunkData, sizeof(AudioRecordingChunk));
+		::memcpy((void*)&m_AesdChunk, (void*)pChunkData, sizeof(AudioRecordingChunk));
 	}
 	else if (pChunk->m_iChunkID == MakeTag("APPL"))
 	{
 		// Application specific info
 		OSType *pType = (OSType*)pChunkData;
-		m_OSType = Swap4(pType);
+		m_OSType = Swap4((*pType));
 		
 		if ((pChunk->m_iChunkSize - sizeof(OSType)) > 0)
 		{
@@ -107,7 +107,7 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		{
 			Marker m;
 			m.id = Swap2((*((UWORD*)pChunkData)));
-			m.position = Swap4((*((long*)pChunkData +2));
+			m.position = Swap4((*((long*)pChunkData +2)));
 			m.string.ReadBuffer(pChunkData +6);
 			
 			int iTotalSize = m.string.m_stringlen +1;
@@ -137,7 +137,7 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 			c.marker = Swap2(pComm->marker);
 			c.string.ReadBuffer(Swap2(pComm->count), pChunkData+sizeof(CommentFields));
 			
-			pChunkData = (pChunkData + (sizeof(CommentFields) + m.string.m_stringlen));
+			pChunkData = (pChunkData + (sizeof(CommentFields) + c.string.m_stringlen));
 			m_Comments.push_back(c);
 		}
 	}

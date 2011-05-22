@@ -62,8 +62,8 @@ void CIff8svx::ParseBody(uint8_t *pChunkData, CIffChunk *pChunk)
 	// just signed bytes as data:
 	// may need unpacking and conversion for output
 	//
-	BYTE *pData = new BYTE[pChunk->m_iChunkSize];
-	::memcpy(pData, pChunkData, pChunk->m_iChunkSize);
+	//BYTE *pData = new BYTE[pChunk->m_iChunkSize];
+	//::memcpy(pData, pChunkData, pChunk->m_iChunkSize);
 
 	// data samples grouped by octave
 	// within each octave are one-shot and repeat portions

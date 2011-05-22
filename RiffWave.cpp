@@ -30,7 +30,7 @@ void CRiffWave::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		if (m_WaveHeader.wFormatTag == fmt_WAVE_FORMAT_PCM)
 		{
 			// Sample size
-			WORD wBitsPerSample = Swap2((*((WORD*)pChunkData)));
+			m_wBitsPerSample = Swap2((*((WORD*)pChunkData)));
 		}
 	}
 	else if (pChunk->m_iChunkID == MakeTag("INFO"))

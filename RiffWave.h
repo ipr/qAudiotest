@@ -67,7 +67,8 @@ private:
 	//CIffHeader *m_pHead; // inherited now
 
 protected:
-	WAVEFormat m_WaveHeader; // fmt
+	WAVEFormat m_WaveHeader; // fmt 
+	WORD m_wBitsPerSample; // extension to 'fmt ' chunk when format is: fmt_WAVE_FORMAT_PCM
 	
 protected:
 	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
@@ -81,11 +82,71 @@ protected:
 		return false;
 	}
 	
+	CIffChunk *GetDataChunk() const
+	{
+		return GetChunkById(MakeTag("data"));
+	}
+	
 public:
     CRiffWave(void);
     virtual ~CRiffWave(void);
 	
 	bool ParseFile(LPCTSTR szPathName);
+
+	bool IsBigEndian() const
+	{
+		if (GetHeader()->m_iFileID == MakeTag("RIFX"))
+		{
+			return true;
+		}
+		return false;
+	}
+	long channelCount() const
+	{
+		return m_WaveHeader.wChannels;
+	}
+	unsigned long sampleRate() const
+	{
+		return m_WaveHeader.dwSamplesPerSec;
+	}
+	long sampleSize() const
+	{
+		// only when format is: fmt_WAVE_FORMAT_PCM
+		// (other cases, see formats..)
+		return m_wBitsPerSample;
+	}
+	
+	// actual sample data
+	unsigned char *sampleData()
+	{
+		// locate datachunk and information
+		CIffChunk *pDataChunk = GetDataChunk();
+		if (pDataChunk == nullptr)
+		{
+			return nullptr;
+		}
+
+		// file was closed? -> error
+		if (m_File.IsCreated() == false)
+		{
+			return nullptr;
+		}
+		
+		// locate actual data
+		return CRiffContainer::GetViewByOffset(pDataChunk->m_iOffset, m_File);
+	}
+	
+	// total size of sample data
+	unsigned long sampleDataSize()
+	{
+		// locate datachunk and information
+		CIffChunk *pDataChunk = GetDataChunk();
+		if (pDataChunk == nullptr)
+		{
+			return 0;
+		}
+		return pDataChunk->m_iChunkSize;
+	}
 	
 };
 
