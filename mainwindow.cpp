@@ -114,6 +114,8 @@ void MainWindow::onFileSelected(QString szFile)
 	format.setFrequency(m_pAudioFile->sampleRate());
 	format.setChannels(m_pAudioFile->channelCount());
 	format.setSampleSize(m_pAudioFile->sampleSize());
+	
+	// TODO: we may have 8-bit signed int..
 	if (m_pAudioFile->sampleSize() <= 8)
 	{
 		format.setSampleType(QAudioFormat::UnSignedInt);
@@ -129,8 +131,32 @@ void MainWindow::onFileSelected(QString szFile)
 		m_pAudioOut = new QAudioOutput(format, this);
 		connect(m_pAudioOut, SIGNAL(stateChanged(QAudio::State)), this, SLOT(onAudioState(QAudio::State)));
 		//m_pAudioOut->start(m_pAudioFile);
+
 		
+		// test: push-mode
+		QIODevice *pDevOut = m_pAudioOut->start();
+		
+		char *pData = (char*)m_pAudioFile->sampleData();
+		qint64 nMax = m_pAudioFile->sampleDataSize();
+
+		// test
+		ui->horizontalSlider->setMinimum(0);
+		ui->horizontalSlider->setMaximum(nMax/1024);
 		ui->horizontalSlider->setValue(0);
+		
+		while (nMax > 0)
+		{
+			qint64 nWritten = pDevOut->write(pData, nMax);
+			if (nWritten == -1)
+			{
+				break;
+			}
+			nMax -= nWritten;
+			pData = pData + nWritten;
+			
+			// test only..
+			ui->horizontalSlider->setValue(nWritten/1024);
+		}
 	}
 	
 		

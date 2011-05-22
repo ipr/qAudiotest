@@ -41,7 +41,7 @@ public:
 	//virtual long sampleDigitSize() = 0; // sizeof(digit) (byte/short/float..)
 	
 	virtual unsigned char *sampleData() = 0; // actual sample data (may need decode here)
-	virtual unsigned long sampleDataSize() = 0; // total size of sample data
+	virtual uint64_t sampleDataSize() = 0; // total size of sample data
 };
 
 #endif // AUDIOFILE_H

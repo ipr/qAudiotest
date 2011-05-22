@@ -315,7 +315,7 @@ public:
 	}
 	
 	// total size of sample data
-	virtual unsigned long sampleDataSize()
+	virtual uint64_t sampleDataSize()
 	{
 		// locate datachunk and information
 		CIffChunk *pDataChunk = GetDataChunk();
