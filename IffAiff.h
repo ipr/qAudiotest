@@ -56,7 +56,7 @@ typedef struct
 {
     unsigned long       offset;
     unsigned long       blockSize;
-    unsigned char       soundData[];
+    //unsigned char       soundData[]; // -> undefined length
 } SoundDataChunk;  
 
 //// MARK
@@ -67,12 +67,14 @@ typedef short   MarkerId;
 
 //// INST
 
+// see playmode definitions for 'playMode'
 typedef struct {
     short           playMode;
     MarkerId        beginLoop;
     MarkerId        endLoop;
 } Loop;
 
+// units are MIDI note numbers (0..127, Middle C is 60)
 typedef struct {
     char            baseNote;
     char            detune;
@@ -94,7 +96,8 @@ typedef struct {
 
 //// AESD
 
-// just fixed-length array of data
+// just fixed-length array of data,
+// AES recording data for user convenience
 typedef struct 
 {
     unsigned char       AESChannelStatusData[24];
@@ -103,10 +106,12 @@ typedef struct
 //// APPL
 
 typedef unsigned long OSType;
+/*
 typedef struct {
     OSType      applicationSignature;
-    char        data[];
+    char        data[]; // optional -> don't include in struct
 } ApplicationSpecificChunk;
+*/
 
 //// COMT
 
@@ -114,7 +119,6 @@ typedef struct {
     unsigned long       timeStamp;
     MarkerId            marker;
     unsigned short      count;
-    //char                text;
 } CommentFields;
 // -> followed by actual string
 
@@ -192,6 +196,26 @@ public:
     unsigned long       timeStamp;
     MarkerId            marker; // link to Marker
 	PascalString        string;
+};
+
+class Common
+{
+public:
+	Common(void)
+	    : numChannels(0)
+	    , numSampleFrames(0)
+	    , sampleSize(0)
+	    , sampleRate(0)
+	{}
+	~Common(void)
+	{}
+	
+	//void HandleCommonChunk(CommonChunk *pComm);
+	
+    short           numChannels;
+    unsigned long   numSampleFrames;
+    short           sampleSize;
+	double          sampleRate; // note: convert from 'extended' (long double) when not supported (Visual C++)
 	
 };
 
@@ -202,6 +226,12 @@ private:
 	//CIffHeader *m_pHead; // inherited now
 
 protected:
+	
+	Common m_Common; // COMM
+	OSType m_OSType; // APPL
+	AudioRecordingChunk m_AesdChunk; // AESD, AES recording data
+	InstrumentChunk m_Instrument; // INST
+	
 	std::string m_szName; // NAME
 	std::string m_szAuthor; // AUTH
 	std::string m_szAnnotations; // ANNO

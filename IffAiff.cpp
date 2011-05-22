@@ -19,9 +19,82 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	{
 		// Common chunk
 		CommonChunk *pComm = (CommonChunk*)pChunkData;
+		m_Common.numChannels = Swap2(pComm->numChannels);
+		m_Common.numSampleFrames = Swap4(pComm->numSampleFrames);
+		m_Common.sampleSize = Swap2(pComm->sampleSize);
+		
+		// TODO: convert 'sampleRate' from 'extended' (80-bit long double) to 64-bit double
+		// since Visual C++ does not support it..
+	}
+	else if (pChunk->m_iChunkID == MakeTag("SSND"))
+	{
+		// Sound data chunk: one at most, zero if CommonChunk::numSampleFrames is zero
+		//
+		// has sample frame data
+		SoundDataChunk *pSound = (SoundDataChunk*)pChunkData;
+		
+		int64_t i64SamplePointCount = m_Common.numSampleFrames * m_Common.numChannels;
+		
+		for (int64_t i = 0; i < i64SamplePointCount; i++)
+		{
+			SoundDataChunk Sound;
+			Sound.offset = Swap4(pSound->offset);
+			Sound.blockSize = Swap4(pSound->blockSize);
+			uint8_t *pData = (uint8_t*)(pSound +1);
+			
+			// TODO: size of actual data?
+			//uint8_t *pSampleData = new uint8_t[m_Common.sampleSize];
+			//::memcpy(pSampleData, pData, m_Common.sampleSize);
+			//pSound = pChunkData + sizeof(SoundDataChunk) + m_Common.sampleSize;
+		}
 	}
 	else if (pChunk->m_iChunkID == MakeTag("INST"))
 	{
+		if (pChunk->m_iChunkSize != 20)
+		{
+			// ASIF, Apple IIGS Sampled Instrument Format
+			// also has "INST" chunk but different size
+			// -> not supported (yet)
+			return;
+		}
+			
+		InstrumentChunk *pInst = (InstrumentChunk*)pChunkData;
+		m_Instrument.baseNote = pInst->baseNote;
+		m_Instrument.detune = pInst->detune;
+		m_Instrument.lowNote = pInst->lowNote;
+		m_Instrument.highNote = pInst->highNote;
+		m_Instrument.lowVelocity = pInst->lowVelocity;
+		m_Instrument.highVelocity = pInst->highVelocity;
+		m_Instrument.gain = pInst->gain;
+		
+		m_Instrument.sustainLoop.playMode = Swap2(pInst->sustainLoop.playMode);
+		m_Instrument.sustainLoop.beginLoop = Swap2(pInst->sustainLoop.beginLoop);
+		m_Instrument.sustainLoop.endLoop = Swap2(pInst->sustainLoop.endLoop);
+		m_Instrument.releaseLoop.playMode = Swap2(pInst->releaseLoop.playMode);
+		m_Instrument.releaseLoop.beginLoop = Swap2(pInst->releaseLoop.beginLoop);
+		m_Instrument.releaseLoop.endLoop = Swap2(pInst->releaseLoop.endLoop);
+	}
+	else if (pChunk->m_iChunkID == MakeTag("MIDI"))
+	{
+		// just array of data
+		//mididata = pChunkData;
+	}
+	else if (pChunk->m_iChunkID == MakeTag("AESD"))
+	{
+		// fixed-size array of data for user convenience (24 bytes)
+		//AudioRecordingChunk *pAesd = (AudioRecordingChunk*)pChunkData;
+		::memcpy(m_AesdChunk, pChunkData, sizeof(AudioRecordingChunk));
+	}
+	else if (pChunk->m_iChunkID == MakeTag("APPL"))
+	{
+		// Application specific info
+		OSType *pType = (OSType*)pChunkData;
+		m_OSType = Swap4(pType);
+		
+		if ((pChunk->m_iChunkSize - sizeof(OSType)) > 0)
+		{
+			// additional application specific data..
+		}
 	}
 	else if (pChunk->m_iChunkID == MakeTag("MARK"))
 	{
@@ -48,20 +121,6 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 			pChunkData = (pChunkData + iTotalSize);
 			m_Markers.push_back(m);
 		}
-	}
-	else if (pChunk->m_iChunkID == MakeTag("MIDI"))
-	{
-		// just array of data
-		//mididata = pChunkData;
-	}
-	else if (pChunk->m_iChunkID == MakeTag("AESD"))
-	{
-		// fixed-size array of data
-		AudioRecordingChunk *pAesd = (AudioRecordingChunk*)pChunkData;
-	}
-	else if (pChunk->m_iChunkID == MakeTag("APPL"))
-	{
-		// Application specific info
 	}
 	else if (pChunk->m_iChunkID == MakeTag("COMT"))
 	{
@@ -101,10 +160,6 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	{
 		// string-data (CHAR[])
 		m_szCopyright.assign((char*)pChunkData, pChunk->m_iChunkSize);
-	}
-	else if (pChunk->m_iChunkID == MakeTag("SSND"))
-	{
-		// Sound data chunk
 	}
 }
 
