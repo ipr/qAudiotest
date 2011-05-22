@@ -15,9 +15,23 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     wavfile.cpp \
     utils.cpp \
+    FileType.cpp \
+    MemoryMappedFile.cpp \
+    IffContainer.cpp \
+    Iff8svx.cpp \
+    RiffWave.cpp \
+    RiffContainer.cpp \
+    IffAiff.cpp
 
 HEADERS  += mainwindow.h \
     wavfile.h \
     utils.h \
+    FileType.h \
+    MemoryMappedFile.h \
+    IffContainer.h \
+    Iff8svx.h \
+    RiffWave.h \
+    RiffContainer.h \
+    IffAiff.h
 
 FORMS    += mainwindow.ui

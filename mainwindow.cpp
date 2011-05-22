@@ -4,6 +4,11 @@
 #include <QFileDialog>
 #include <QDebug>
 
+#include "FileType.h"
+#include "MemoryMappedFile.h"
+
+#include "Iff8svx.h"
+#include "RiffWave.h"
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -41,22 +46,38 @@ void MainWindow::onFileSelected(QString szFile)
 {
 	//m_File.setFileName("C:/Tools/Dose by Mellow Chips.wav");
 	
-	m_File.setFileName(szFile);
-	m_File.open(QIODevice::ReadOnly);
-	m_pWavFile = new WavFile();
-	if (m_pWavFile->readHeader(m_File) == true)
+	CFileType Type;
+	CMemoryMappedFile File;
+	if (File.Create(szFile.toStdWString().c_str()) == false)
 	{
-		QAudioFormat format = m_pWavFile->format();
-		QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-		if (info.isFormatSupported(format)) 
+		return;
+	}
+	Type.DetermineFileType(File.GetView(), 16);
+	File.Destroy();
+	
+	if (Type.m_enFileType == HEADERTYPE_WAVE)
+	{
+		m_File.setFileName(szFile);
+		m_File.open(QIODevice::ReadOnly);
+		m_pWavFile = new WavFile();
+		if (m_pWavFile->readHeader(m_File) == true)
 		{
-			m_pAudioOut = new QAudioOutput(format, this);
-			m_pAudioOut->start(&m_File);
-			
-			ui->horizontalSlider->setValue(0);
+			QAudioFormat format = m_pWavFile->format();
+			QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+			if (info.isFormatSupported(format)) 
+			{
+				m_pAudioOut = new QAudioOutput(format, this);
+				m_pAudioOut->start(&m_File);
+				
+				ui->horizontalSlider->setValue(0);
+			}
 		}
 	}
-	
+	else if (Type.m_enFileType == HEADERTYPE_8SVX)
+	{
+		// CIff8SVX File;
+	}
+		
 /*	
 	QAudioFormat format;
 	// Set up the format, eg.
