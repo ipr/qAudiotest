@@ -17,6 +17,13 @@
 #include "MemoryMappedFile.h"
 #include "RiffContainer.h"
 
+// interface to define in audio-file
+#include "AudioFile.h"
+
+
+// std::string, for keeping sample&copyright descriptions
+#include <string>
+
 // support for old-style decl
 //
 typedef uint8_t UBYTE;
@@ -62,7 +69,7 @@ DWORD  dwSampleOffset;
 #pragma pack(pop)
 
 
-class CRiffWave : public CRiffContainer
+class CRiffWave : public AudioFile, public CRiffContainer
 {
 private:
 	CMemoryMappedFile m_File;
@@ -73,6 +80,8 @@ protected:
 	WORD m_wBitsPerSample; // extension to 'fmt ' chunk when format is: fmt_WAVE_FORMAT_PCM
 	
 protected:
+	void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
+	
 	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	
 	virtual bool IsSupportedType(CIffHeader *pHeader)
@@ -93,9 +102,9 @@ public:
     CRiffWave(void);
     virtual ~CRiffWave(void);
 	
-	bool ParseFile(LPCTSTR szPathName);
+	virtual bool ParseFile(const std::wstring &szFileName);
 
-	bool IsBigEndian() const
+	virtual bool isBigEndian()
 	{
 		if (GetHeader()->m_iFileID == MakeTag("RIFX"))
 		{
@@ -103,15 +112,15 @@ public:
 		}
 		return false;
 	}
-	long channelCount() const
+	virtual long channelCount()
 	{
 		return m_WaveHeader.wChannels;
 	}
-	unsigned long sampleRate() const
+	virtual unsigned long sampleRate()
 	{
 		return m_WaveHeader.dwSamplesPerSec;
 	}
-	long sampleSize() const
+	virtual long sampleSize()
 	{
 		// only when format is: fmt_WAVE_FORMAT_PCM
 		// (other cases, see formats..)
@@ -119,7 +128,7 @@ public:
 	}
 	
 	// actual sample data
-	unsigned char *sampleData()
+	virtual unsigned char *sampleData()
 	{
 		// locate datachunk and information
 		CIffChunk *pDataChunk = GetDataChunk();
@@ -139,7 +148,7 @@ public:
 	}
 	
 	// total size of sample data
-	unsigned long sampleDataSize()
+	virtual unsigned long sampleDataSize()
 	{
 		// locate datachunk and information
 		CIffChunk *pDataChunk = GetDataChunk();

@@ -8,8 +8,6 @@
 // http://amigan.1emu.net/reg/8SVX.txt
 //
 
-
-//#include "stdafx.h"
 #include "Iff8svx.h"
 
 
@@ -54,9 +52,10 @@ void DUnpack(BYTE source[], LONG n, BYTE dest[])
 
 //////////////////// protected methods
 
-
-void CIff8svx::ParseBody(uint8_t *pChunkData, CIffChunk *pChunk)
+void CIff8svx::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 {
+	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
+
 	// process data of BODY-chunk
 	
 	// just signed bytes as data:
@@ -144,7 +143,8 @@ void CIff8svx::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	{
 		// just signed bytes as data (PCM-encoded 8-bit sample data)
 		
-		ParseBody(pChunkData, pChunk);
+		// actually, no need until playback..
+		//Decode(pChunk, pFile);
 	}
 	
 }
@@ -152,7 +152,8 @@ void CIff8svx::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 //////////////////// public methods
 
 CIff8svx::CIff8svx(void)
-	: CIffContainer()
+	: AudioFile()
+    , CIffContainer()
 	, m_File()
 {
 }
@@ -162,9 +163,9 @@ CIff8svx::~CIff8svx(void)
 	m_File.Destroy();
 }
 
-bool CIff8svx::ParseFile(LPCTSTR szPathName)
+bool CIff8svx::ParseFile(const std::wstring &szFileName)
 {
-	if (m_File.Create(szPathName) == false)
+	if (m_File.Create(szFileName.c_str()) == false)
 	{
 		return false;
 	}

@@ -15,6 +15,7 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
+    m_pAudioFile(nullptr),
 	m_pAudioOut(nullptr)
 {
     ui->setupUi(this);
@@ -38,6 +39,10 @@ MainWindow::~MainWindow()
 		m_pAudioOut->stop();
 		delete m_pAudioOut;
 	}
+	if (m_pAudioFile != nullptr)
+	{
+		delete m_pAudioFile;
+	}
     delete ui;
 }
 
@@ -53,6 +58,12 @@ void MainWindow::onFileSelected(QString szFile)
 	// TODO: change so that we can use same file again
 	// without reopening..
 	
+	if (m_pAudioFile != nullptr)
+	{
+		// destruction must release resources (close file)
+		delete m_pAudioFile;
+		m_pAudioFile = nullptr;
+	}
 	
 	CFileType Type;
 	CMemoryMappedFile FileTmp;
@@ -61,74 +72,67 @@ void MainWindow::onFileSelected(QString szFile)
 	{
 		return;
 	}
-	Type.DetermineFileType(FileTmp.GetView(), 16);
+	Type.DetermineFileType((uint8_t*)FileTmp.GetView(), 16);
 	FileTmp.Destroy();
 	
-	// TODO: inherit handlers from common base,
-	// -> use virtual methods..
-	
-	QAudioFormat format;
 	if (Type.m_enFileType == HEADERTYPE_AIFF)
 	{
-		// TODO: also set as member..
-		
-		CIffAiff File;
-		if (File.ParseFile(szFilename.c_str()) == false)
-		{
-			// failure
-			return;
-		}
+		m_pAudioFile = new CIffAiff();
 	}
 	else if (Type.m_enFileType == HEADERTYPE_8SVX)
 	{
-		// TODO: also set as member..
-		CIff8svx File;
-		if (File.ParseFile(szFilename.c_str()) == false)
-		{
-			// failure
-			return;
-		}
+		m_pAudioFile = new CIff8svx();
 	}
 	else if (Type.m_enFileType == HEADERTYPE_WAVE)
 	{
-		// TODO: also set as member..
-		CRiffWave File;
-		if (File.ParseFile(szFilename.c_str()) == false)
-		{
-			return;
-		}
-		if (File.IsBigEndian() == true)
-		{
-			format.setByteOrder(QAudioFormat::BigEndian);
-		}
-		else
-		{
-			format.setByteOrder(QAudioFormat::LittleEndian);
-		}
-		
-		format.setCodec("audio/pcm");
-		format.setFrequency(File.sampleRate());
-		format.setChannels(File.channelCount());
-		format.setSampleSize(File.sampleSize());
-		if (File.sampleSize() <= 8)
-		{
-			format.setSampleType(QAudioFormat::UnSignedInt);
-		}
-		else
-		{
-			format.setSampleType(QAudioFormat::SignedInt);
-		}
-		
-		QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-		if (info.isFormatSupported(format)) 
-		{
-			m_pAudioOut = new QAudioOutput(format, this);
-			connect(m_pAudioOut, SIGNAL(stateChanged(QAudio::State)), this, SLOT(onAudioState(QAudio::State)));
-			//m_pAudioOut->start(&m_File);
-			
-			ui->horizontalSlider->setValue(0);
-		}
+		m_pAudioFile = new CRiffWave();
 	}
+	
+	if (m_pAudioFile == nullptr)
+	{
+		// could not determine file type/not supported (yet)
+		return;
+	}
+	
+	if (m_pAudioFile->ParseFile(szFilename) == false)
+	{
+		// failed opening/processing, not supported type?
+		return;
+	}
+	
+	QAudioFormat format;
+	if (m_pAudioFile->isBigEndian() == true)
+	{
+		format.setByteOrder(QAudioFormat::BigEndian);
+	}
+	else
+	{
+		format.setByteOrder(QAudioFormat::LittleEndian);
+	}
+	
+	format.setCodec("audio/pcm");
+	format.setFrequency(m_pAudioFile->sampleRate());
+	format.setChannels(m_pAudioFile->channelCount());
+	format.setSampleSize(m_pAudioFile->sampleSize());
+	if (m_pAudioFile->sampleSize() <= 8)
+	{
+		format.setSampleType(QAudioFormat::UnSignedInt);
+	}
+	else
+	{
+		format.setSampleType(QAudioFormat::SignedInt);
+	}
+	
+	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+	if (info.isFormatSupported(format)) 
+	{
+		m_pAudioOut = new QAudioOutput(format, this);
+		connect(m_pAudioOut, SIGNAL(stateChanged(QAudio::State)), this, SLOT(onAudioState(QAudio::State)));
+		//m_pAudioOut->start(m_pAudioFile);
+		
+		ui->horizontalSlider->setValue(0);
+	}
+	
 		
 /*	
 	QAudioFormat format;
@@ -186,5 +190,12 @@ void MainWindow::on_actionStop_triggered()
 		m_pAudioOut->stop();
 		delete m_pAudioOut;
 		m_pAudioOut = nullptr;
+	}
+	
+	if (m_pAudioFile != nullptr)
+	{
+		// destruction must release resources (close file)
+		delete m_pAudioFile;
+		m_pAudioFile = nullptr;
 	}
 }

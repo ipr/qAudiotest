@@ -15,6 +15,10 @@
 #include "MemoryMappedFile.h"
 #include "IffContainer.h"
 
+// interface to define in audio-file
+#include "AudioFile.h"
+
+
 // std::string, for keeping sample&copyright descriptions
 #include <string>
 #include <vector>
@@ -219,7 +223,7 @@ public:
 	
 };
 
-class CIffAiff : public CIffContainer
+class CIffAiff : public AudioFile, public CIffContainer
 {
 private:
 	CMemoryMappedFile m_File;
@@ -245,6 +249,7 @@ protected:
 	
 	
 protected:
+	void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 
 	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	
@@ -266,31 +271,31 @@ public:
 	CIffAiff(void);
 	virtual ~CIffAiff(void);
 
-	bool ParseFile(LPCTSTR szPathName);
+	virtual bool ParseFile(const std::wstring &szFileName);
 
 	// values to use for QAudioFormat or similar
 	//codec (PCM-coded)
 	
-	bool IsBigEndian() const
+	virtual bool isBigEndian()
 	{
 		return true;
 	}
-	long channelCount() const
+	virtual long channelCount()
 	{
 		return m_Common.numChannels;
 	}
-	unsigned long sampleRate() const
+	virtual unsigned long sampleRate()
 	{
 		// TODO: some conversion..
 		return m_Common.sampleRate;
 	}
-	long sampleSize() const
+	virtual long sampleSize()
 	{
 		return m_Common.sampleSize;
 	}
 	
 	// actual sample data
-	unsigned char *sampleData()
+	virtual unsigned char *sampleData()
 	{
 		// locate datachunk and information
 		CIffChunk *pDataChunk = GetDataChunk();
@@ -310,7 +315,7 @@ public:
 	}
 	
 	// total size of sample data
-	unsigned long sampleDataSize()
+	virtual unsigned long sampleDataSize()
 	{
 		// locate datachunk and information
 		CIffChunk *pDataChunk = GetDataChunk();

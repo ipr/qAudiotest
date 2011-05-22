@@ -17,6 +17,10 @@
 #include "MemoryMappedFile.h"
 #include "IffContainer.h"
 
+// interface to define in audio-file
+#include "AudioFile.h"
+
+
 // std::string, for keeping sample&copyright descriptions
 #include <string>
 
@@ -74,7 +78,7 @@ typedef struct
 #pragma pack(pop)
 
 
-class CIff8svx : public CIffContainer
+class CIff8svx : public AudioFile, public CIffContainer
 {
 private:
 	CMemoryMappedFile m_File;
@@ -96,7 +100,7 @@ protected:
 
 protected:
 	
-	void ParseBody(uint8_t *pChunkData, CIffChunk *pChunk);
+	void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 
 	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	
@@ -118,30 +122,33 @@ public:
 	CIff8svx(void);
 	virtual ~CIff8svx(void);
 
-	bool ParseFile(LPCTSTR szPathName);
+	virtual bool ParseFile(const std::wstring &szFileName);
 
-	bool IsBigEndian() const
+	virtual bool isBigEndian()
 	{
 		return true;
 	}
-	/*
-	long channelCount() const
+	
+	virtual long channelCount()
 	{
-		return m_Common.numChannels;
+		// TODO: determine
+		//return m_VoiceHeader. ?numChannels;
+		return 8;
 	}
- */
-	unsigned long sampleRate() const
+	
+	virtual unsigned long sampleRate()
 	{
 		return m_VoiceHeader.samplesPerSec;
 	}
-	long sampleSize() const
+	
+	virtual long sampleSize()
 	{
 		// 8-bit only
 		return 8;
 	}
 	
 	// actual sample data
-	unsigned char *sampleData()
+	virtual unsigned char *sampleData()
 	{
 		// locate datachunk and information
 		CIffChunk *pDataChunk = GetDataChunk();
@@ -161,7 +168,7 @@ public:
 	}
 	
 	// total size of sample data
-	unsigned long sampleDataSize()
+	virtual unsigned long sampleDataSize()
 	{
 		// locate datachunk and information
 		CIffChunk *pDataChunk = GetDataChunk();

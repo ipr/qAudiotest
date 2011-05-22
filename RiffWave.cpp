@@ -5,11 +5,17 @@
 // (c) Ilkka Prusi, 2011
 //
 
-
 #include "RiffWave.h"
 
 
 //////////////////// protected methods
+
+void CRiffWave::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
+{
+	uint8_t *pChunkData = CRiffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
+	
+	// decode when actual playback
+}
 
 
 void CRiffWave::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
@@ -52,7 +58,8 @@ void CRiffWave::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	}
 	else if (pChunk->m_iChunkID == MakeTag("data"))
 	{
-		// actual sample data
+		// decode when actual playback
+		//Decode(pChunk, pFile);
 	}
 	
 	// TODO: determine other types of chunks..
@@ -69,7 +76,8 @@ void CRiffWave::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 //////////////////// public methods
 
 CRiffWave::CRiffWave(void)
-	: CRiffContainer()
+	: AudioFile()
+    , CRiffContainer()
 	, m_File()
 {
 }
@@ -80,9 +88,9 @@ CRiffWave::~CRiffWave(void)
 	m_File.Destroy();
 }
 
-bool CRiffWave::ParseFile(LPCTSTR szPathName)
+bool CRiffWave::ParseFile(const std::wstring &szFileName)
 {
-	if (m_File.Create(szPathName) == false)
+	if (m_File.Create(szFileName.c_str()) == false)
 	{
 		return false;
 	}

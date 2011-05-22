@@ -28,6 +28,8 @@ HEADERS  += mainwindow.h \
     Iff8svx.h \
     RiffWave.h \
     RiffContainer.h \
-    IffAiff.h
+    IffAiff.h \
+    AudioFile.h \
+    IffChunk.h
 
 FORMS    += mainwindow.ui

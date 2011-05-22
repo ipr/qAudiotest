@@ -6,7 +6,8 @@
 #include <QFile>
 #include <QtMultimedia/QAudioOutput>
 
-#include "wavfile.h"
+#include "AudioFile.h"
+
 
 namespace Ui {
     class MainWindow;
@@ -35,10 +36,8 @@ private slots:
 	
 private:
     Ui::MainWindow *ui;
-	//QFile m_File;
+	AudioFile *m_pAudioFile;
 	QAudioOutput *m_pAudioOut;
-	
-	WavFile *m_pWavFile;
 };
 
 #endif // MAINWINDOW_H

@@ -14,106 +14,16 @@
 
 #include <stdint.h>
 
+// chunk-node types
+#include "IffChunk.h"
+
 // I can't be arsed to else,
 // simple is best
 #include "MemoryMappedFile.h"
 
 
-// fwd. decl.
-//
-//class CIffHeader;
-class CIffChunk; 
-
-
-class CIffChunk
-{
-public:
-	CIffChunk() 
-		: m_pPrevious(nullptr)
-		, m_pNext(nullptr)
-		, m_iChunkID(0)
-		, m_iChunkSize(0)
-		, m_iOffset(0)
-	{
-	}
-	~CIffChunk()
-	{
-	}
-
-	CIffChunk *m_pPrevious;
-	CIffChunk *m_pNext;
-
-	// actually CHAR[4]
-	uint32_t m_iChunkID;
-
-	// size of data in chunk
-	uint32_t m_iChunkSize;
-
-	// offset to start of data in actual file
-	// (from start of file): we maintain this
-	int64_t m_iOffset;
-};
-
-// file header node:
-// special only to locate origin
-//
-class CIffHeader
-{
-public:
-	CIffHeader() 
-		: m_pFirst(nullptr)
-	    , m_iOffset(0)
-	    , m_iTypeID(0)
-		, m_iFileID(0)
-		, m_iDataSize(0)
-		, m_iFileSize(0)
-	{
-	}
-	~CIffHeader()
-	{
-		DestroyChunks();
-	}
-
-	void DestroyChunks()
-	{
-		// use simple loop instead of recursion,
-		// otherwise easily we run out of stack-limits
-		CIffChunk *pCurrent = m_pFirst;
-		while (pCurrent != nullptr)
-		{
-			// keep next before destroying current
-			CIffChunk *pNext = pCurrent->m_pNext;
-			delete pCurrent;
-			pCurrent = pNext;
-		}
-		m_pFirst = nullptr;
-	}
-	
-
-	// start from first chunk in file
-	CIffChunk *m_pFirst;
-	
-	// offset to start of data in actual file
-	// (from start of file): we maintain this
-	int64_t m_iOffset;
-	
-	// type of payload in this container:
-	// (WAVE or other)
-	uint32_t m_iTypeID;
-
-	// actually CHAR[4],
-	// tag-ID is type of file (usually "RIFF")
-	uint32_t m_iFileID;
-
-	// data size given in file header
-	uint32_t m_iDataSize;
-
-	// size of actual file
-	int64_t m_iFileSize;
-};
-
-
-// handling of the general RIFF chunks in file
+// handling of the general RIFF chunks in file,
+// some differences to normal IFF-chunks (stupid MS just has to do differently..).
 //
 class CRiffContainer
 {
@@ -179,11 +89,23 @@ protected:
 	CIffChunk *GetChunkById(const uint32_t uiFourccID) const
 	{
 		CIffHeader *pHead = GetHeader();
-		CIffChunk *pChunk = pHead->m_pFirst;
+		if (pHead != nullptr)
+		{
+			return GetNextChunkById(pHead->m_pFirst, uiFourccID);
+		}
+		// not opened/processed file?
+		return nullptr;
+	}
+	
+	// in case file has multiple chunks with same identifier, locate next
+	CIffChunk *GetNextChunkById(CIffChunk *pPrevChunk, const uint32_t uiFourccID) const
+	{
+		CIffChunk *pChunk = pPrevChunk;
 		while (pChunk != nullptr)
 		{
 			if (pChunk->m_iChunkID == uiFourccID)
 			{
+				// found -> return to caller
 				return pChunk;
 			}
 			pChunk = pChunk->m_pNext;
@@ -191,6 +113,7 @@ protected:
 		// not found, incomplete file?
 		return nullptr;
 	}
+	
 	
 public:
 	CRiffContainer(void);

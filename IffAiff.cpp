@@ -11,6 +11,32 @@
 
 //////////////////// protected methods
 
+void CIffAiff::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
+{
+	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
+	
+	// Sound data chunk: one at most, zero if CommonChunk::numSampleFrames is zero
+	//
+	// has sample frame data
+	SoundDataChunk *pSound = (SoundDataChunk*)pChunkData;
+	
+	int64_t i64SamplePointCount = m_Common.numSampleFrames * m_Common.numChannels;
+	
+	for (int64_t i = 0; i < i64SamplePointCount; i++)
+	{
+		SoundDataChunk Sound;
+		Sound.offset = Swap4(pSound->offset);
+		Sound.blockSize = Swap4(pSound->blockSize);
+		uint8_t *pData = (uint8_t*)(pSound +1);
+		
+		// TODO: size of actual data?
+		//uint8_t *pSampleData = new uint8_t[m_Common.sampleSize];
+		//::memcpy(pSampleData, pData, m_Common.sampleSize);
+		//pSound = pChunkData + sizeof(SoundDataChunk) + m_Common.sampleSize;
+	}
+	
+}
+
 void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 {
 	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
@@ -28,25 +54,8 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	}
 	else if (pChunk->m_iChunkID == MakeTag("SSND"))
 	{
-		// Sound data chunk: one at most, zero if CommonChunk::numSampleFrames is zero
-		//
-		// has sample frame data
-		SoundDataChunk *pSound = (SoundDataChunk*)pChunkData;
-		
-		int64_t i64SamplePointCount = m_Common.numSampleFrames * m_Common.numChannels;
-		
-		for (int64_t i = 0; i < i64SamplePointCount; i++)
-		{
-			SoundDataChunk Sound;
-			Sound.offset = Swap4(pSound->offset);
-			Sound.blockSize = Swap4(pSound->blockSize);
-			uint8_t *pData = (uint8_t*)(pSound +1);
-			
-			// TODO: size of actual data?
-			//uint8_t *pSampleData = new uint8_t[m_Common.sampleSize];
-			//::memcpy(pSampleData, pData, m_Common.sampleSize);
-			//pSound = pChunkData + sizeof(SoundDataChunk) + m_Common.sampleSize;
-		}
+		// decode when actual playback
+		//Decode(pChunk, pFile);
 	}
 	else if (pChunk->m_iChunkID == MakeTag("INST"))
 	{
@@ -167,7 +176,8 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 //////////////////// public methods
 
 CIffAiff::CIffAiff(void)
-	: CIffContainer()
+	: AudioFile()
+    , CIffContainer()
 	, m_File()
 {
 }
@@ -177,9 +187,9 @@ CIffAiff::~CIffAiff(void)
 	m_File.Destroy();
 }
 
-bool CIffAiff::ParseFile(LPCTSTR szPathName)
+bool CIffAiff::ParseFile(const std::wstring &szFileName)
 {
-	if (m_File.Create(szPathName) == false)
+	if (m_File.Create(szFileName.c_str()) == false)
 	{
 		return false;
 	}
