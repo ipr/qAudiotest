@@ -63,34 +63,7 @@ typedef struct
 
 typedef short   MarkerId;
 
-/*
-  note about pstring:
-  pstring: 	Pascal-style string, a one byte count followed by text bytes. 
-  The total number of bytes in this data type should be even. 
-  A pad byte can be added at the end of the text to accomplish this. 
-  This pad byte is not reflected in the count.
-*/
-// -> see class PascalString
-/*
-typedef struct
-{
-	BYTE                nameLength;
-	char                markerName[];
-} pstring;
-
-typedef struct {
-    MarkerId            id;
-    unsigned long       position;
-    //pstring             markerName;
-} Marker;
-// -> followed by PascalString
-
-typedef struct {
-    unsigned short      numMarkers;
-    Marker              Markers[];
-} MarkerChunk;
-// -> 
-*/
+// -> see class PascalString and Marker
 
 //// INST
 
@@ -143,15 +116,17 @@ typedef struct {
     unsigned short      count;
     //char                text;
 } CommentFields;
-
-/*
-typedef struct {
-    unsigned short      numComments;
-    Comment             comments[];
-} CommentsChunk;
-*/
+// -> followed by actual string
 
 #pragma pack(pop)
+
+/*
+  note about pstring:
+  pstring: 	Pascal-style string, a one byte count followed by text bytes. 
+  The total number of bytes in this data type should be even. 
+  A pad byte can be added at the end of the text to accomplish this. 
+  This pad byte is not reflected in the count.
+*/
 
 // pstring handling,
 // single byte as length followed by character-data
