@@ -42,6 +42,7 @@
    <addaction name="actionFile"/>
    <addaction name="actionPlay"/>
    <addaction name="actionStop"/>
+   <addaction name="actionAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionFile">
@@ -74,6 +75,14 @@
    </property>
    <property name="shortcut">
     <string>S</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+   <property name="shortcut">
+    <string>?</string>
    </property>
   </action>
  </widget>

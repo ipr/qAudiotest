@@ -2,6 +2,8 @@
 #include "ui_mainwindow.h"
 
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QTextEdit>
 #include <QDebug>
 
 // for testing
@@ -296,4 +298,23 @@ void MainWindow::on_actionStop_triggered()
 		delete m_pAudioFile;
 		m_pAudioFile = nullptr;
 	}
+}
+
+void MainWindow::on_actionAbout_triggered()
+{
+	QTextEdit *pTxt = new QTextEdit(this);
+	pTxt->setWindowFlags(Qt::Window); //or Qt::Tool, Qt::Dialog if you like
+	pTxt->setReadOnly(true);
+	pTxt->append("qAudiotest by Ilkka Prusi 2011");
+	pTxt->append("");
+	pTxt->append("This program is free to use and distribute. No warranties of any kind.");
+	pTxt->append("Program uses Qt 4.7.2 under LGPL v. 2.1");
+	pTxt->append("");
+	pTxt->append("Keyboard shortcuts:");
+	pTxt->append("");
+	pTxt->append("F = open file");
+	pTxt->append("Esc = close");
+	pTxt->append("? = about (this dialog)");
+	pTxt->append("");
+	pTxt->show();
 }
