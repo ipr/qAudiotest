@@ -1,3 +1,8 @@
+//////////////////////////////////
+//
+// Ilkka Prusi, 2011
+//
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -307,7 +312,7 @@ void MainWindow::on_actionAbout_triggered()
 	pTxt->setReadOnly(true);
 	pTxt->append("qAudiotest by Ilkka Prusi 2011");
 	pTxt->append("");
-	pTxt->append("This program is free to use and distribute. No warranties of any kind.");
+	pTxt->append("This program is free to use and distribute in binary form. No warranties of any kind.");
 	pTxt->append("Program uses Qt 4.7.2 under LGPL v. 2.1");
 	pTxt->append("");
 	pTxt->append("Keyboard shortcuts:");

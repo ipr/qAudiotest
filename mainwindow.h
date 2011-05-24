@@ -1,3 +1,9 @@
+//////////////////////////////////
+//
+// Ilkka Prusi, 2011
+//
+
+
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
