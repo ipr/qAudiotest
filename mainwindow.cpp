@@ -4,6 +4,9 @@
 #include <QFileDialog>
 #include <QDebug>
 
+// for testing
+#include <QThread>
+
 #include "FileType.h"
 #include "MemoryMappedFile.h"
 
@@ -128,6 +131,7 @@ void MainWindow::onFileSelected(QString szFile)
 
 	double nFrame = ( format.channels() * format.sampleSize() / 8 );
     double usInBuffer = ( (m_pAudioFile->sampleDataSize()*1000000ui64) / nFrame ) / format.frequency();
+	double dBuf = nFrame * format.frequency(); 
 	ui->horizontalSlider->setMaximum(usInBuffer/1000); // -> msec
 	ui->horizontalSlider->setMinimum(0);
 	ui->horizontalSlider->setValue(0);
@@ -139,32 +143,41 @@ void MainWindow::onFileSelected(QString szFile)
 		connect(m_pAudioOut, SIGNAL(stateChanged(QAudio::State)), this, SLOT(onAudioState(QAudio::State)));
 		connect(m_pAudioOut, SIGNAL(notify()), this, SLOT(onPlayNotify()));
 
+		// test, increase buffering for smoother playback
+		// on IO-load (Windows trashes disk often..)
+		int iBufSize = m_pAudioOut->bufferSize();
+		if (iBufSize < dBuf)
+		{
+			m_pAudioOut->setBufferSize(dBuf);
+		}
+		
 		// pull-mode (implement the interface needed in audio-file?)
 		//m_pAudioOut->start(m_pAudioFile);
 
 		m_pAudioOut->setNotifyInterval(250);
 		
 		// test: push-mode (need threading to work correctly)
-		QIODevice *pDevOut = m_pAudioOut->start();
-
+		m_pDevOut = m_pAudioOut->start();
+		
+		// test, increase priority of playback-thread
+		// to reduce problems on heavy loads
+		QThread *pCur = QThread::currentThread();
+		pCur->setPriority(QThread::TimeCriticalPriority);
 		
 		// TODO: make buffering of file anyway instead of memory-mapped?
 		// experiencing "pauses" under IO-load on Windows..
 		// or just make thread higher-priority?
 		
+		m_nWritten = 0;
+		m_pSampleData = (char*)m_pAudioFile->sampleData();
+		m_nSampleSize = m_pAudioFile->sampleDataSize();
 		
-		char *pData = (char*)m_pAudioFile->sampleData();
-		qint64 nMax = m_pAudioFile->sampleDataSize();
-		while (nMax > 0)
+		qint64 nWritten = m_pDevOut->write(m_pSampleData, m_nSampleSize);
+		if (nWritten == -1)
 		{
-			qint64 nWritten = pDevOut->write(pData, nMax);
-			if (nWritten == -1)
-			{
-				break;
-			}
-			nMax -= nWritten;
-			pData = pData + nWritten;
+			return;
 		}
+		m_nWritten += nWritten;
 	}
 		
 }
@@ -191,6 +204,16 @@ void MainWindow::onPlayNotify()
 	int iValue = ui->horizontalSlider->value();
 	ui->horizontalSlider->setValue(iValue + 250);
 	// /temp!
+	
+	// test: only write on intervals (when some buffer has been consumed)
+	// to reduce CPU-load (no need write when buffer is nearly full..)
+	qint64 nWritten = m_pDevOut->write(m_pSampleData + m_nWritten, m_nSampleSize - m_nWritten);
+	if (nWritten == -1)
+	{
+		on_actionStop_triggered();
+		return;
+	}
+	m_nWritten += nWritten;
 }
 
 void MainWindow::on_actionFile_triggered()

@@ -39,6 +39,12 @@ private:
     Ui::MainWindow *ui;
 	AudioFile *m_pAudioFile;
 	QAudioOutput *m_pAudioOut;
+	QIODevice *m_pDevOut;
+	
+	// temp, push-mode
+	qint64 m_nWritten;
+	char *m_pSampleData;
+	qint64 m_nSampleSize;
 };
 
 #endif // MAINWINDOW_H
