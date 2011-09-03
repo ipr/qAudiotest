@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     Iff8svx.cpp \
     RiffWave.cpp \
     RiffContainer.cpp \
-    IffAiff.cpp
+    IffAiff.cpp \
+    ieee.c
 
 HEADERS  += mainwindow.h \
     FileType.h \
@@ -30,6 +31,9 @@ HEADERS  += mainwindow.h \
     RiffContainer.h \
     IffAiff.h \
     AudioFile.h \
-    IffChunk.h
+    IffChunk.h \
+    ieee.h
 
 FORMS    += mainwindow.ui
+
+

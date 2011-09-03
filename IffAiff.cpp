@@ -2,14 +2,61 @@
 //
 // CIffAiff : IFF-AIFF audio format parser
 // (Audio Interchange File Format, Audio IFF)
+// from Apple, used by SGI.
+//
+// Should be (mostly) usable with AIFF-C also,
+// see specification: DAVIC 1.4.1 Part 9 Annex B
+// (http://www.davic.org)
+//
+// Audio IFF conforms to the EA IFF 85 standard
+// and supports sample point sizes from 1 to 32 bits.
 //
 // (c) Ilkka Prusi, 2011
 //
 
 #include "IffAiff.h"
 
+// use standard 80-bit extended (long double) to 64-bit double 
+// conversion routines: for compatibility and less bugs,
+// same code is used just about everywhere i think..
+extern "C" 
+{
+ #include "ieee.h"
+}
+
 
 //////////////////// protected methods
+
+
+// convert 80-bit extended-precision value ('long double')
+// to 64-bit double since Visual C++ does not support it..
+// (many CPU support it though..)
+//
+// Note about sampleRate regarding AIFF-C (DAVIC 1.4.1 standard):
+//
+// sampleRate: An 80-bit floating point value indicating the rate at which the sound was sampled. The format of the
+// floating point value is double-extended precision floating point, which includes one sign bit, 15-bit exponent, and 64-
+// bit mantissa according to the IEEE 96-bit floating point representation (using only 15 bits instead of 31 for the
+// exponent). For DAVIC 1.4.1, the only valid sample rates are show in the table below.
+//
+// +-------------+------------------------+
+// | Sample Rate | Hex Representation     |
+// +-------------+------------------------+
+// | 16.000 kHz  | 0x400CFA00000000000000 |
+// | 22.050 kHz  | 0x400DAC44000000000000 |
+// | 24.000 kHz  | 0x400DBB80000000000000 |
+// | 32.000 kHz  | 0x400DFA00000000000000 |
+// | 44.100 kHz  | 0x400EAC44000000000000 |
+// | 48.000 kHz  | 0x400EBB80000000000000 |
+// +-------------+------------------------+
+//
+double CIffAiff::ExtendedToDouble(unsigned char *pvalue)
+{
+    // use standard 80-bit extended (long double) to 64-bit double 
+    // conversion routines: for compatibility and less bugs.
+    //
+	return ConvertFromIeeeExtended(pvalue);
+}
 
 void CIffAiff::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 {
@@ -42,15 +89,6 @@ void CIffAiff::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	}
 }
 
-// convert 80-bit extended-precision value ('long double')
-// to 64-bit double since Visual C++ does not support it..
-// (many CPU support it though..
-double CIffAiff::ExtendedToDouble(unsigned char value[10])
-{
-	//TODO:
-	return 0;
-}
-
 void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 {
 	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
@@ -66,6 +104,27 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		// note: convert 'sampleRate' from 'extended' (80-bit long double) to 64-bit double
 		// since Visual C++ does not support it..
 		m_Common.sampleRate = ExtendedToDouble(pComm->sampleRate);
+        
+        // extended common chunk (compression information)
+        //
+        // note: compression is not used in DAVIC 1.4.1 standard 
+        // so compression type should be constant value 0x4E4F4E45
+        // -> this whole section is pointless..
+        // -> we can just skip this
+        //
+        if (GetHeader()->m_iTypeID == MakeTag("AIFC"))
+        {
+            ExtendedCommonChunk *pExtComm = (ExtendedCommonChunk*)(pChunkData+sizeof(CommonChunk));
+
+            // should be 0x4E4F4E45 for 'NONE' when no compression (see DAVIC 1.4.1)
+            m_ulCompresionType = Swap4(pExtComm->compressionType);
+            
+            // should be constant value 0x6E6F7420636F70726573736564
+            // for 'no compression' when not compressed (see DAVIC 1.4.1)
+            m_CompressionName.ReadBuffer(pExtComm->compNameLength,
+                                         pChunkData+sizeof(CommonChunk)+sizeof(ExtendedCommonChunk)
+                                         );
+        }
 	}
 	else if (pChunk->m_iChunkID == MakeTag("SSND"))
 	{
@@ -164,6 +223,13 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 			pChunkData = (pChunkData + (sizeof(CommentFields) + c.string.m_stringlen));
 			m_Comments.push_back(c);
 		}
+	}
+    else if (pChunk->m_iChunkID == MakeTag("FVER"))
+	{
+        // AIFF-C Format Version Chunk:
+        // should be constant value of specification creation date
+        // (0xA2805140 for 1990-05-23, 14:40)
+        unsigned long ulVersionDate = Swap4((*((unsigned long*)pChunkData)));
 	}
 	else if (pChunk->m_iChunkID == MakeTag("NAME"))
 	{

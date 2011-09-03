@@ -2,6 +2,14 @@
 //
 // CIffAiff : IFF-AIFF audio format parser
 // (Audio Interchange File Format, Audio IFF)
+// from Apple, used by SGI.
+//
+// Should be (mostly) usable with AIFF-C also,
+// see specification: DAVIC 1.4.1 Part 9 Annex B
+// (http://www.davic.org)
+//
+// Audio IFF conforms to the EA IFF 85 standard
+// and supports sample point sizes from 1 to 32 bits.
 //
 // (c) Ilkka Prusi, 2011
 //
@@ -54,6 +62,16 @@ typedef struct
     //extended        sampleRate; // note: 80-bit -> not available on x86.. (no compiler support)
 	unsigned char    sampleRate[10]; // check handling! need some way to convert correctly..
 } CommonChunk; 
+
+//// Extended Common Chunk (AIFF-C)
+// additional compression values
+typedef struct 
+{
+    unsigned long    compressionType;
+    unsigned char    compNameLength;
+    //unsigned char       compressionName[]; // -> undefined length
+} ExtendedCommonChunk; 
+
 
 //// SSND
 typedef struct 
@@ -232,6 +250,13 @@ private:
 protected:
 	
 	Common m_Common; // COMM
+    
+    // compression type and name from extended common chunk,
+    // AIFF-C only:
+    // not used in DAVIC 1.4.1 standard so we can skip these
+    unsigned long m_ulCompresionType;
+    PascalString  m_CompressionName;
+    
 	OSType m_OSType; // APPL
 	AudioRecordingChunk m_AesdChunk; // AESD, AES recording data
 	InstrumentChunk m_Instrument; // INST
@@ -249,18 +274,26 @@ protected:
 	
 	
 protected:
-	void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 
-	double ExtendedToDouble(unsigned char value[10]);
-	
+	double ExtendedToDouble(unsigned char *pvalue);
+
+    void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
+    
 	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	
 	virtual bool IsSupportedType(CIffHeader *pHeader)
 	{
+        // standard AIFF chunk ID
 		if (pHeader->m_iTypeID == MakeTag("AIFF"))
 		{
 			return true;
 		}
+        // AIFF-C chunk ID,
+        // TODO: check rest of code for support
+        if (pHeader->m_iTypeID == MakeTag("AIFC"))
+        {
+            return true;
+        }
 		return false;
 	}
 

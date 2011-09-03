@@ -1,12 +1,14 @@
 /////////////////////////////////////////////////////////
 //
-// CIff8svx : IFF-8svx audio format parser
+// CIff8svx : IFF-8SVX audio format parser
 // (8-bit Sampled VoX, or Voice)
 //
 // (c) Ilkka Prusi, 2011
 //
 // See format specification at:
 // http://amigan.1emu.net/reg/8SVX.txt
+//
+// IFF-8SVX conforms to EA IFF 85 standard.
 //
 
 #ifndef _IFF8SVX_H_

@@ -1,6 +1,7 @@
 /////////////////////////////////////////////////////////
 //
 // CIff8svx : IFF-8svx audio format parser
+// (8-bit Sampled VoX, or Voice)
 //
 // (c) Ilkka Prusi, 2011
 //
