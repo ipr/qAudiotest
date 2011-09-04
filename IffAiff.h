@@ -246,7 +246,7 @@ class CAifcCompression
 {
 public:
     const unsigned long m_ulCompresionType;
-    PascalString  m_CompressionName;
+    std::string m_szCompressionName;
     
 public:
     CAifcCompression(const unsigned long ulCompressionType)
@@ -274,7 +274,15 @@ public:
 };
 
 /*
-// TODO: AIFF-C compression decoding support?
+// 'sowt'/'twos' for little-endian type (just byteswap, no compression)
+class CAifcSowt : public CAifcCompression
+{};
+// 
+class CAifcTwos : public CAifcCompression
+{};
+*/
+
+/*
 class CAifcCompressionFl32 : public CAifcCompression
 {};
 class CAifcCompressionFl64 : public CAifcCompression
@@ -298,7 +306,9 @@ protected:
     
     // actual sample frame data
     SoundDataChunk m_SoundData; // SSND
-    uint8_t *m_pSoundData; // pointer to file data (must change if file is reopened..)
+    
+    // count when needed..
+    //uint8_t *m_pSoundData; // pointer to file data (must change if file is reopened..)
     
 	OSType m_OSType; // APPL
 	AudioRecordingChunk m_AesdChunk; // AESD, AES recording data
@@ -368,7 +378,8 @@ public:
 	}
 	virtual unsigned long sampleRate()
 	{
-		// TODO: some conversion..
+		// note: check value unit
+        // we may have this in kHz
 		return m_Common.sampleRate;
 	}
 	virtual long sampleSize()
@@ -392,15 +403,10 @@ public:
 		{
 			return nullptr;
 		}
-
-		// file was closed? -> error
-		if (m_File.IsCreated() == false)
-		{
-			return nullptr;
-		}
-		
-		// locate actual data
-		return CIffContainer::GetViewByOffset(pDataChunk->m_iOffset, m_File);
+        
+        // count position of data (we may have offset to certain frame..)
+        uint8_t *pChunkData = CIffContainer::GetViewByOffset(pDataChunk->m_iOffset, pFile);
+        return (pChunkData + m_SoundData.offset);
 	}
 	
 	// total size of sample data
@@ -412,7 +418,7 @@ public:
 		{
 			return 0;
 		}
-		return pDataChunk->m_iChunkSize;
+		return (pDataChunk->m_iChunkSize - sizeof(SoundDataChunk));
 	}
 };
 

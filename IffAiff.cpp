@@ -61,12 +61,12 @@ double CIffAiff::ExtendedToDouble(unsigned char *pvalue)
 
 void CIffAiff::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 {
-	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
+	//uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
 	
 	int64_t i64SamplePointCount = m_Common.numSampleFrames * m_Common.numChannels;
 	
     // handled before in SSND chunk
-    uint8_t *pData = m_pSoundData;
+    uint8_t *pData = sampleData();
     
 	for (int64_t i = 0; i < i64SamplePointCount; i++)
 	{
@@ -96,12 +96,89 @@ CAifcCompression *CIffAiff::GetCompression(CIffChunk *pChunk, uint8_t *pChunkDat
     // can be 'sowt'/'twos' for little-endian AIFF-C (Mac OS X) ?
     unsigned long ulCompressionType = Swap4(pExtComm->compressionType);
 
+    // should be constant value 0x6E6F7420636F70726573736564
+    // for 'no compression' when not compressed (see DAVIC 1.4.1)
+    PascalString CompressionName;
+    CompressionName.ReadBuffer(pExtComm->compNameLength,
+                               pChunkData+sizeof(CommonChunk)+sizeof(ExtendedCommonChunk)
+                               );
+    
     CAifcCompression *pCompression = nullptr;
     switch (ulCompressionType)
     {
     case 0x4E4F4E45:
+        // 'NONE', no compression - DAVIC
         pCompression = new CAifcNone();
         break;
+        
+        // Mac OS X byteswap support,
+        // just tells that data is little-endian instead of big-endian..
+        // create "compression-handler" to do the byteswap..
+        /*
+    case MakeTag("sowt"):
+        // - Apple
+        pCompression = new CAifcSowt();
+        break;
+    case MakeTag("twos"):
+        // - Apple
+        pCompression = new CAifcTwos();
+        break;
+
+    case MakeTag("fl32"):
+        // 32-bit floating point - Apple
+        break;
+    case MakeTag("fl64"):
+        // 64-bit floating point - Apple
+        break;
+    case MakeTag("FL32"):
+        // Float 32 - SoundHack & Csound
+        break;
+    case MakeTag("alaw"):
+        // ALaw 2:1 - Apple
+        break;
+    case MakeTag("ulaw"):
+        // ƒÊLaw 2:1 - Apple
+        break;
+    case MakeTag("ALAW"):
+        // CCITT G.711 A-law - SGI
+        break;
+    case MakeTag("ULAW"):
+        // CCITT G.711 u-law - SGI
+        break;
+    case MakeTag("ADP4"):
+        // 4:1 Intel/DVI ADPCM - SoundHack
+        break;
+    case MakeTag("ima4"):
+        // IMA 4:1
+        break;
+    case MakeTag("ACE2"):
+        // ACE 2-to-1
+        break;
+    case MakeTag("ACE8"):
+        // ACE 8-to-3
+        break;
+    case MakeTag("DWVW"):
+        // Delta With Variable Word Width - TX16W Typhoon
+        break;
+    case MakeTag("MAC3"):
+        // MACE 3-to-1 - Apple
+        break;
+    case MakeTag("MAC6"):
+        // MACE 6-to-1 - Apple
+        break;
+    case MakeTag("Qclp"):
+        // Qualcomm PureVoice - Qualcomm
+        break;
+    case MakeTag("QDMC"):
+        // QDesign Music - QDesign
+        break;
+    case MakeTag("rt24"):
+        // RT24 50:1 - Voxware
+        break;
+    case MakeTag("rt29"):
+        // RT29 50:1 - Voxware
+        break;
+        */
         
     default:
         // base as placeholder for now..
@@ -109,11 +186,8 @@ CAifcCompression *CIffAiff::GetCompression(CIffChunk *pChunk, uint8_t *pChunkDat
         break;
     }
     
-    // should be constant value 0x6E6F7420636F70726573736564
-    // for 'no compression' when not compressed (see DAVIC 1.4.1)
-    pCompression->m_CompressionName.ReadBuffer(pExtComm->compNameLength,
-                                 pChunkData+sizeof(CommonChunk)+sizeof(ExtendedCommonChunk)
-                                 );
+    // keep in sane string type for simplicity..
+    pCompression->m_szCompressionName = CompressionName.m_szString;
     
     return pCompression;
 }
@@ -158,6 +232,8 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
         SoundDataChunk *pSound = (SoundDataChunk*)pChunkData;
 		m_SoundData.offset = Swap4(pSound->offset);
 		m_SoundData.blockSize = Swap4(pSound->blockSize);
+        
+        /* // count pointer when needed..
 		m_pSoundData = (pChunkData +sizeof(SoundDataChunk));
 		
 		// when fixed-size data with offset defined
@@ -165,6 +241,7 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		{
 			m_pSoundData = (m_pSoundData + m_SoundData.offset);
 		}
+        */
         
 		// decode when actual playback
 		//Decode(pChunk, pFile);
@@ -299,13 +376,13 @@ CIffAiff::CIffAiff(void)
     , CIffContainer()
 	, m_File()
     , m_pCompression(nullptr)
-    , m_pSoundData(nullptr)
+    //, m_pSoundData(nullptr)
 {
 }
 
 CIffAiff::~CIffAiff(void)
 {
-    m_pSoundData = nullptr; // don't delete, unmap view
+    //m_pSoundData = nullptr; // don't delete, unmap view
     if (m_pCompression != nullptr)
     {
         delete m_pCompression;
