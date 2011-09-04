@@ -241,6 +241,46 @@ public:
 	
 };
 
+// compression handling, pure virtual base
+class CAifcCompression
+{
+public:
+    const unsigned long m_ulCompresionType;
+    PascalString  m_CompressionName;
+    
+public:
+    CAifcCompression(const unsigned long ulCompressionType)
+        : m_ulCompresionType(ulCompressionType)
+    {}
+    ~CAifcCompression()
+    {}
+    
+    //virtual void Decode() = 0;
+    //virtual void Encode() = 0;
+};
+
+// 'NONE' compression
+class CAifcNone : public CAifcCompression
+{
+public:
+    CAifcNone()
+        : CAifcCompression(0x4E4F4E45)
+    {}
+    ~CAifcNone()
+    {}
+    
+    //virtual void Decode() {}
+    //virtual void Encode() {}
+};
+
+/*
+// TODO: AIFF-C compression decoding support?
+class CAifcCompressionFl32 : public CAifcCompression
+{};
+class CAifcCompressionFl64 : public CAifcCompression
+{};
+*/
+
 class CIffAiff : public AudioFile, public CIffContainer
 {
 private:
@@ -252,10 +292,13 @@ protected:
 	Common m_Common; // COMM
     
     // compression type and name from extended common chunk,
-    // AIFF-C only:
-    // not used in DAVIC 1.4.1 standard so we can skip these
-    unsigned long m_ulCompresionType;
-    PascalString  m_CompressionName;
+    // AIFF-C only, compression handling support
+    CAifcCompression *m_pCompression;
+    unsigned long m_ulAifcVersionDate; // version of standard (creation date)
+    
+    // actual sample frame data
+    SoundDataChunk m_SoundData; // SSND
+    uint8_t *m_pSoundData; // pointer to file data (must change if file is reopened..)
     
 	OSType m_OSType; // APPL
 	AudioRecordingChunk m_AesdChunk; // AESD, AES recording data
@@ -278,7 +321,11 @@ protected:
 	double ExtendedToDouble(unsigned char *pvalue);
 
     void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
+
+    // get handler for compression used in file
+    virtual CAifcCompression *GetCompression(CIffChunk *pChunk, uint8_t *pChunkData);
     
+    // process detected chunk
 	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	
 	virtual bool IsSupportedType(CIffHeader *pHeader)

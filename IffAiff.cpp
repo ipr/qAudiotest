@@ -54,6 +54,7 @@ double CIffAiff::ExtendedToDouble(unsigned char *pvalue)
 {
     // use standard 80-bit extended (long double) to 64-bit double 
     // conversion routines: for compatibility and less bugs.
+    // there aren't really alternatives either for correct algorithm..
     //
 	return ConvertFromIeeeExtended(pvalue);
 }
@@ -62,33 +63,64 @@ void CIffAiff::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 {
 	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
 	
-	// Sound data chunk: one at most, zero if CommonChunk::numSampleFrames is zero
-	//
-	// has sample frame data
-	SoundDataChunk *pSound = (SoundDataChunk*)pChunkData;
-	
 	int64_t i64SamplePointCount = m_Common.numSampleFrames * m_Common.numChannels;
 	
+    // handled before in SSND chunk
+    uint8_t *pData = m_pSoundData;
+    
 	for (int64_t i = 0; i < i64SamplePointCount; i++)
 	{
-		SoundDataChunk Sound;
-		Sound.offset = Swap4(pSound->offset);
-		Sound.blockSize = Swap4(pSound->blockSize);
-		uint8_t *pData = (uint8_t*)(pSound +1);
-		
-		// when fixed-size data with offset defined
-		if (Sound.offset > 0)
-		{
-			pData = pData + Sound.offset;
-		}
-	
 		// TODO: size of actual data?
+        // byteswap, decode, format change?
+        
+        /*
+        if (m_pCompression != nullptr)
+        {
+            m_pCompression->Decode();
+        }
+        */
+        
 		//uint8_t *pSampleData = new uint8_t[m_Common.sampleSize];
 		//::memcpy(pSampleData, pData, m_Common.sampleSize);
 		//pSound = pChunkData + sizeof(SoundDataChunk) + m_Common.sampleSize;
 	}
 }
 
+// get handler for compression used in file,
+// handle extended-part in common chunk
+CAifcCompression *CIffAiff::GetCompression(CIffChunk *pChunk, uint8_t *pChunkData)
+{
+    ExtendedCommonChunk *pExtComm = (ExtendedCommonChunk*)(pChunkData+sizeof(CommonChunk));
+    
+    // should be 0x4E4F4E45 for 'NONE' when no compression (see DAVIC 1.4.1),
+    // can be 'sowt'/'twos' for little-endian AIFF-C (Mac OS X) ?
+    unsigned long ulCompressionType = Swap4(pExtComm->compressionType);
+
+    CAifcCompression *pCompression = nullptr;
+    switch (ulCompressionType)
+    {
+    case 0x4E4F4E45:
+        pCompression = new CAifcNone();
+        break;
+        
+    default:
+        // base as placeholder for now..
+        pCompression = new CAifcCompression(ulCompressionType);
+        break;
+    }
+    
+    // should be constant value 0x6E6F7420636F70726573736564
+    // for 'no compression' when not compressed (see DAVIC 1.4.1)
+    pCompression->m_CompressionName.ReadBuffer(pExtComm->compNameLength,
+                                 pChunkData+sizeof(CommonChunk)+sizeof(ExtendedCommonChunk)
+                                 );
+    
+    return pCompression;
+}
+
+
+// process detected chunk, file may have chunks in any order
+// -> handle when found
 void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 {
 	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
@@ -109,25 +141,31 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
         //
         // note: compression is not used in DAVIC 1.4.1 standard 
         // so compression type should be constant value 0x4E4F4E45
-        // -> this whole section is pointless..
-        // -> we can just skip this
         //
-        if (GetHeader()->m_iTypeID == MakeTag("AIFC"))
+        if (GetHeader()->m_iTypeID == MakeTag("AIFC")
+            && pChunk->m_iChunkSize >= (sizeof(CommonChunk)+sizeof(ExtendedCommonChunk)))
         {
-            ExtendedCommonChunk *pExtComm = (ExtendedCommonChunk*)(pChunkData+sizeof(CommonChunk));
-
-            // should be 0x4E4F4E45 for 'NONE' when no compression (see DAVIC 1.4.1)
-            m_ulCompresionType = Swap4(pExtComm->compressionType);
-            
-            // should be constant value 0x6E6F7420636F70726573736564
-            // for 'no compression' when not compressed (see DAVIC 1.4.1)
-            m_CompressionName.ReadBuffer(pExtComm->compNameLength,
-                                         pChunkData+sizeof(CommonChunk)+sizeof(ExtendedCommonChunk)
-                                         );
+            // read extended-part of common chunk 
+            // for compression handling object
+            m_pCompression = GetCompression(pChunk, pChunkData);
         }
 	}
 	else if (pChunk->m_iChunkID == MakeTag("SSND"))
 	{
+        // Sound data chunk: one at most, zero if CommonChunk::numSampleFrames is zero
+        //
+        // has sample frame data
+        SoundDataChunk *pSound = (SoundDataChunk*)pChunkData;
+		m_SoundData.offset = Swap4(pSound->offset);
+		m_SoundData.blockSize = Swap4(pSound->blockSize);
+		m_pSoundData = (pChunkData +sizeof(SoundDataChunk));
+		
+		// when fixed-size data with offset defined
+		if (m_SoundData.offset > 0)
+		{
+			m_pSoundData = (m_pSoundData + m_SoundData.offset);
+		}
+        
 		// decode when actual playback
 		//Decode(pChunk, pFile);
 	}
@@ -229,7 +267,7 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
         // AIFF-C Format Version Chunk:
         // should be constant value of specification creation date
         // (0xA2805140 for 1990-05-23, 14:40)
-        unsigned long ulVersionDate = Swap4((*((unsigned long*)pChunkData)));
+        m_ulAifcVersionDate = Swap4((*((unsigned long*)pChunkData)));
 	}
 	else if (pChunk->m_iChunkID == MakeTag("NAME"))
 	{
@@ -260,11 +298,18 @@ CIffAiff::CIffAiff(void)
 	: AudioFile()
     , CIffContainer()
 	, m_File()
+    , m_pCompression(nullptr)
+    , m_pSoundData(nullptr)
 {
 }
 
 CIffAiff::~CIffAiff(void)
 {
+    m_pSoundData = nullptr; // don't delete, unmap view
+    if (m_pCompression != nullptr)
+    {
+        delete m_pCompression;
+    }
 	m_File.Destroy();
 }
 
