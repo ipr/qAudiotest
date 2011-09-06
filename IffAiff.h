@@ -305,8 +305,8 @@ protected:
     // actual sample frame data
     SoundDataChunk m_SoundData; // SSND
     
-    // count when needed..
-    //uint8_t *m_pSoundData; // pointer to file data (must change if file is reopened..)
+    // position in raw sample data, updated while decoding/decompressing for playback..
+    uint8_t *m_pSoundData; // pointer to file data (must change if file is reopened..)
     
 	OSType m_OSType; // APPL
 	AudioRecordingChunk m_AesdChunk; // AESD, AES recording data
@@ -413,7 +413,7 @@ public:
 	}
     
     // TODO: additional options for conversion?
-    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize);
+    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/);
     
 };
 

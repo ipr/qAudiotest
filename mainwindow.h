@@ -58,7 +58,8 @@ private:
 	// temp, push-mode
 	qint64 m_nWritten;
 	char *m_pSampleData;
-	qint64 m_nSampleSize;
+	qint64 m_nSampleDataSize;
+    bool m_bDecodeNeeded;
 };
 
 #endif // MAINWINDOW_H

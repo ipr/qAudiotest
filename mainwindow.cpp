@@ -116,20 +116,47 @@ void MainWindow::onFileSelected(QString szFile)
 		return;
 	}
 	
+    // assume no need
+    m_bDecodeNeeded = false;
+    
 	QAudioFormat format;
-	if (m_pAudioFile->isBigEndian() == true)
-	{
-		format.setByteOrder(QAudioFormat::BigEndian);
-	}
-	else
-	{
-		format.setByteOrder(QAudioFormat::LittleEndian);
-	}
+    format.setByteOrder(QAudioFormat::LittleEndian);
+            
+    /* TODO: check later if necessary to swap for output
+        when output doesn't support byteswap itself (windows)
+        for now assume it is needed 
+    */
+    if (m_pAudioFile->isBigEndian() == true)
+    {
+        m_bDecodeNeeded = true;
+    }
 	
 	format.setCodec("audio/pcm");
 	format.setFrequency(m_pAudioFile->sampleRate());
 	format.setChannels(m_pAudioFile->channelCount());
-	format.setSampleSize(m_pAudioFile->sampleSize());
+    format.setSampleSize(m_pAudioFile->sampleSize());
+
+    /*
+      TODO: check if output actually supports varying sizes of samples,
+      for now just set closest match
+    */    
+    if (m_pAudioFile->sampleSize() <= 8)
+    {
+        // need to align data to multiples of 8 on windows..
+        format.setSampleSize(8);
+    }
+    else if (m_pAudioFile->sampleSize() <= 16)
+    {
+        // need to align data to multiples of 8 on windows..
+        format.setSampleSize(16);
+    }
+    else if (m_pAudioFile->sampleSize() > 16)
+    {
+        // AIFF supports upto 32 bits,
+        // output on windows does not..
+        // -> limit to 16-bits for now..
+        format.setSampleSize(16);
+    }
 	
 	if (m_pAudioFile->isSigned() == true)
 	{
@@ -164,15 +191,14 @@ void MainWindow::onFileSelected(QString szFile)
         
         ui->statusBar->showMessage("Unsupported audio-format");
         
-        qDebug() << "format not supported: "
-                    << "byteorder" << (int)format.byteOrder()
-                    << "chcount" << format.channelCount()
-                    << "frequ" << format.frequency()
-                    << "smprate" << format.sampleRate()
-                    << "smpsize" << format.sampleSize()
-                    << "smptype" << (int)format.sampleType()
-                    << "codec" << format.codec()
-                    << "\r\n";
+        qDebug() << "format not supported, device: " << info.deviceName()
+                    << "byteorder: " << (int)format.byteOrder()
+                    << "channel count: " << format.channelCount()
+                    << "frequency: " << format.frequency()
+                    << "samplerate: " << format.sampleRate()
+                    << "samplesize: " << format.sampleSize()
+                    << "sampletype: " << (int)format.sampleType()
+                    << "codec: " << format.codec();
         
         dumpDeviceFormat(info);
 		return;
@@ -186,8 +212,22 @@ void MainWindow::onFileSelected(QString szFile)
 	ui->horizontalSlider->setValue(0);
     
     m_nWritten = 0;
-	m_pSampleData = (char*)m_pAudioFile->sampleData();
-	m_nSampleSize = m_pAudioFile->sampleDataSize();
+    
+    if (m_bDecodeNeeded == false)
+    {
+        // just use memory mapped view, no other buffering
+        m_pSampleData = (char*)m_pAudioFile->sampleData();
+        m_nSampleDataSize = m_pAudioFile->sampleDataSize();
+    }
+    else
+    {
+        // need buffer for decoding -> allocate it
+        m_nSampleDataSize = dBuf;
+        m_pSampleData = new char[m_nSampleDataSize];
+        
+        // TODO: keep actual buffer size somewhere..
+        m_nSampleDataSize = m_pAudioFile->decode((uchar*)m_pSampleData, m_nSampleDataSize /*, &format*/);
+    }
     
 	m_pAudioOut = new QAudioOutput(format, this);
 	connect(m_pAudioOut, SIGNAL(stateChanged(QAudio::State)), this, SLOT(onAudioState(QAudio::State)));
@@ -215,7 +255,7 @@ void MainWindow::onFileSelected(QString szFile)
 	pCur->setPriority(QThread::TimeCriticalPriority);
 	
 	// write initial
-	qint64 nWritten = m_pDevOut->write(m_pSampleData, m_nSampleSize);
+	qint64 nWritten = m_pDevOut->write(m_pSampleData, m_nSampleDataSize);
 	if (nWritten == -1)
 	{
 		on_actionStop_triggered();
@@ -242,12 +282,27 @@ void MainWindow::onPlayNotify()
 {
 	// test: only write on intervals (when some buffer has been consumed)
 	// to reduce CPU-load (no need write when buffer is nearly full..)
-	qint64 nWritten = m_pDevOut->write(m_pSampleData + m_nWritten, m_nSampleSize - m_nWritten);
+    
+    if (m_bDecodeNeeded == false)
+    {
+        // just use memory mapped view of file as-is, move further
+        m_pSampleData = (m_pSampleData + m_nWritten);
+        m_nSampleDataSize = (m_nSampleDataSize - m_nWritten);
+    }
+    else
+    {
+        // TODO: keep actual buffer size somewhere..
+        m_nSampleDataSize = m_pAudioFile->decode((uchar*)m_pSampleData, m_nSampleDataSize /*, &format*/);
+    }
+    
+	qint64 nWritten = m_pDevOut->write(m_pSampleData, m_nSampleDataSize);
 	if (nWritten == -1)
 	{
 		on_actionStop_triggered();
 		return;
 	}
+    
+    // for next time
 	m_nWritten += nWritten;
 	
 	// TODO: catch user positioning of slider..
@@ -326,6 +381,11 @@ void MainWindow::on_actionStop_triggered()
 		delete m_pAudioFile;
 		m_pAudioFile = nullptr;
 	}
+    
+    if (m_bDecodeNeeded == true)
+    {
+        delete m_pSampleData;
+    }
 }
 
 void MainWindow::on_listWidget_doubleClicked(const QModelIndex &index)
@@ -369,6 +429,8 @@ void MainWindow::on_actionAbout_triggered()
 //debug: dump supported formats..
 void MainWindow::dumpDeviceFormat(QAudioDeviceInfo info)
 {
+    qDebug() << "device: " << info.deviceName();
+    
     qDebug() << "endianess:";
     foreach (QAudioFormat::Endian end, info.supportedByteOrders())
     {

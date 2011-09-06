@@ -213,19 +213,9 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
         SoundDataChunk *pSound = (SoundDataChunk*)pChunkData;
 		m_SoundData.offset = Swap4(pSound->offset);
 		m_SoundData.blockSize = Swap4(pSound->blockSize);
-        
-        /* // count pointer when needed..
-		m_pSoundData = (pChunkData +sizeof(SoundDataChunk));
-		
-		// when fixed-size data with offset defined
-		if (m_SoundData.offset > 0)
-		{
-			m_pSoundData = (m_pSoundData + m_SoundData.offset);
-		}
-        */
-        
-		// decode when actual playback
-		//Decode(pChunk, pFile);
+
+        // position in raw sample data for output (decoding/decompressing)        
+		m_pSoundData = (pChunkData + sizeof(SoundDataChunk) + m_SoundData.offset);
 	}
 	else if (pChunk->m_iChunkID == MakeTag("INST"))
 	{
@@ -387,13 +377,11 @@ bool CIffAiff::ParseFile(const std::wstring &szFileName)
 }
 
 // TODO: additional options for conversion?
-uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize)
+uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/)
 {
     // lazy.. just zero it
     ::memset(pBuffer, 0, nBufSize);
     
-    // start of raw samples
-    uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset + m_SoundData.offset, m_File);
     
     // sample points in each frame&channel
 	uint64_t nRawPointCount = m_Common.numSampleFrames * m_Common.numChannels;
@@ -403,7 +391,7 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize)
     // and align to that if different
     //
     int nOutSampleSize = 16;
-    uint64_t nOutPoints = (nSize / nOutSampleSize);
+    uint64_t nOutPoints = (nBufSize / nOutSampleSize);
 	
     // raw sample data in bytes
     // TODO: check varying sample sizes, handle block align if not multiple of 8
@@ -414,14 +402,15 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize)
 		// TODO: size of actual data?
         // byteswap, decode, format change?
         
-        ::memcpy(pBuffer, pChunkData, m_Common.sampleSize);
+        ::memcpy(pBuffer, m_pSoundData, m_Common.sampleSize);
         if (m_Common.sampleSize <= 8)
         {
             int shift = m_Common.sampleSize - 8;
             if (shift > 0)
             {
                 // align output when sample smaller than 8 bits
-                (*pBuffer) = ((*pBuffer) >> shift);
+                //(*pBuffer) = ((*pBuffer) >> shift);
+                (*pBuffer) = ((*pBuffer) << shift);
             }
         }
         else if (m_Common.sampleSize <= 16)
@@ -433,7 +422,8 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize)
             if (shift > 0)
             {
                 // align output when sample smaller than 16 bits
-                (*pBuffer) = ((*pBuffer) >> shift);
+                //(*ptmp) = ((*ptmp) >> shift);
+                (*ptmp) = ((*ptmp) << shift);
             }
         }
         else
@@ -442,8 +432,9 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize)
             // do we need some more advanced handling..?
         }
         
-        // align input according to input-sample size
-        pChunkData = (pChunkData + m_Common.sampleSize);
+        // align input according to input-sample size,
+        // no padding
+        m_pSoundData = (m_pSoundData + m_Common.sampleSize);
 
         // align output according to output-sample size        
         pBuffer = (pBuffer + nOutSampleSize);

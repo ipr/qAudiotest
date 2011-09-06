@@ -13,6 +13,9 @@
 #include <stdint.h>
 #include <string>
 
+// fwd. decl. for type supported by device
+/*class QAudioFormat;*/
+
 class AudioFile
 {
 protected:
@@ -48,7 +51,7 @@ public:
     
     // optional decoding for playback
     // TODO: additional options for conversion..?
-    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize) 
+    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/) 
     {
         // nothing written to output
         return 0;
