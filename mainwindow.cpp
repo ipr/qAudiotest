@@ -168,7 +168,11 @@ void MainWindow::onFileSelected(QString szFile)
     
 	if (info.isFormatSupported(format) == false) 
 	{
-        // note: means need to byteswap since default output doesn't support it..
+        // note: usually means need to byteswap 
+        // since default output on Windows doesn't support it..
+        // also, at least AIFF supports various sample sizes 
+        // so that may need handling also
+        // (shift to nearest 8/16 bits for Windows output if less than 32..)
         
         ui->statusBar->showMessage("Unsupported audio-format");
         
