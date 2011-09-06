@@ -58,9 +58,7 @@ typedef struct
 	  and it truncates definition to common "double" (80-bit -> 64-bit). */
 	/* extended: 80 bit IEEE Standard 754 floating point number 
      (Standard Apple Numeric Environment [SANE] data type Extended). */
-	/* see _controlfp_s for Visual C++ handling.. */
-    //extended        sampleRate; // note: 80-bit -> not available on x86.. (no compiler support)
-	unsigned char    sampleRate[10]; // check handling! need some way to convert correctly..
+	unsigned char    sampleRate[10]; // need conversion since VC++ doesn't support "extended" type..
 } CommonChunk; 
 
 //// Extended Common Chunk (AIFF-C)
@@ -330,8 +328,6 @@ protected:
 
 	double ExtendedToDouble(unsigned char *pvalue);
 
-    void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
-
     // get handler for compression used in file
     virtual CAifcCompression *GetCompression(CIffChunk *pChunk, uint8_t *pChunkData);
     
@@ -378,8 +374,7 @@ public:
 	}
 	virtual unsigned long sampleRate()
 	{
-		// note: check value unit
-        // we may have this in kHz
+        // sample rate in Hz
 		return m_Common.sampleRate;
 	}
 	virtual long sampleSize()
@@ -394,7 +389,7 @@ public:
 		return true;
 	}
 	
-	// actual sample data
+	// actual raw sample data
 	virtual unsigned char *sampleData()
 	{
 		// locate datachunk and information
@@ -409,17 +404,17 @@ public:
         return (pChunkData + m_SoundData.offset);
 	}
 	
-	// total size of sample data
+	// total size of sample data in bytes
 	virtual uint64_t sampleDataSize()
 	{
-		// locate datachunk and information
-		CIffChunk *pDataChunk = GetDataChunk();
-		if (pDataChunk == nullptr)
-		{
-			return 0;
-		}
-		return (pDataChunk->m_iChunkSize - sizeof(SoundDataChunk));
+        // note: may need to adjust sample size to 8/16 bits for Windows output
+        // since any size from 1 to 32 bits may be used..
+        return (m_Common.numSampleFrames * m_Common.numChannels * m_Common.sampleSize);
 	}
+    
+    // TODO: additional options for conversion?
+    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize);
+    
 };
 
 #endif // IFFAIFF_H

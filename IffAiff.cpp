@@ -59,33 +59,6 @@ double CIffAiff::ExtendedToDouble(unsigned char *pvalue)
 	return ConvertFromIeeeExtended(pvalue);
 }
 
-void CIffAiff::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
-{
-	//uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
-	
-	int64_t i64SamplePointCount = m_Common.numSampleFrames * m_Common.numChannels;
-	
-    // handled before in SSND chunk
-    uint8_t *pData = sampleData();
-    
-	for (int64_t i = 0; i < i64SamplePointCount; i++)
-	{
-		// TODO: size of actual data?
-        // byteswap, decode, format change?
-        
-        /*
-        if (m_pCompression != nullptr)
-        {
-            m_pCompression->Decode();
-        }
-        */
-        
-		//uint8_t *pSampleData = new uint8_t[m_Common.sampleSize];
-		//::memcpy(pSampleData, pData, m_Common.sampleSize);
-		//pSound = pChunkData + sizeof(SoundDataChunk) + m_Common.sampleSize;
-	}
-}
-
 // get handler for compression used in file,
 // handle extended-part in common chunk
 CAifcCompression *CIffAiff::GetCompression(CIffChunk *pChunk, uint8_t *pChunkData)
@@ -304,16 +277,16 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	}
 	else if (pChunk->m_iChunkID == MakeTag("MARK"))
 	{
-		unsigned short numMarkers = Swap2((*((UWORD*)pChunkData)));
-		pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset + sizeof(UWORD), pFile);
+		unsigned short numMarkers = Swap2((*((uint16_t*)pChunkData)));
+		pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset + sizeof(uint16_t), pFile);
 
 		// each must be aligned to start at even byte boundary
 		// -> may have padding bytes between 
 		for (int i = 0; i < numMarkers; i++)
 		{
 			Marker m;
-			m.id = Swap2((*((UWORD*)pChunkData)));
-			m.position = Swap4((*((long*)pChunkData +2)));
+			m.id = Swap2((*((uint16_t*)pChunkData)));
+			m.position = Swap4((*((uint32_t*)pChunkData +2)));
 			m.string.ReadBuffer(pChunkData +6);
 			
 			int iTotalSize = m.string.m_stringlen +1;
@@ -331,8 +304,8 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	else if (pChunk->m_iChunkID == MakeTag("COMT"))
 	{
 		// Comments
-		unsigned short numComments = Swap2((*((UWORD*)pChunkData)));
-		pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset + sizeof(UWORD), pFile);
+		unsigned short numComments = Swap2((*((uint16_t*)pChunkData)));
+		pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset + sizeof(uint16_t), pFile);
 		
 		// array of structs, no padding between (always even-length)
 		for (int i = 0; i < numComments; i++)
@@ -352,7 +325,7 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
         // AIFF-C Format Version Chunk:
         // should be constant value of specification creation date
         // (0xA2805140 for 1990-05-23, 14:40)
-        m_ulAifcVersionDate = Swap4((*((unsigned long*)pChunkData)));
+        m_ulAifcVersionDate = Swap4((*((uint32_t*)pChunkData)));
 	}
 	else if (pChunk->m_iChunkID == MakeTag("NAME"))
 	{
@@ -411,5 +384,71 @@ bool CIffAiff::ParseFile(const std::wstring &szFileName)
 	}
 
 	return true;
+}
+
+// TODO: additional options for conversion?
+uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize)
+{
+    // lazy.. just zero it
+    ::memset(pBuffer, 0, nBufSize);
+    
+    // start of raw samples
+    uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset + m_SoundData.offset, m_File);
+    
+    // sample points in each frame&channel
+	uint64_t nRawPointCount = m_Common.numSampleFrames * m_Common.numChannels;
+
+    // TODO: need output format knowledge:
+    // for now, assume 16-bit output
+    // and align to that if different
+    //
+    int nOutSampleSize = 16;
+    uint64_t nOutPoints = (nSize / nOutSampleSize);
+	
+    // raw sample data in bytes
+    // TODO: check varying sample sizes, handle block align if not multiple of 8
+    //uint64_t nSampleData = (m_Common.numSampleFrames * m_Common.numChannels * m_Common.sampleSize);
+    
+	for (uint64_t i = 0; i < nRawPointCount && i < nOutPoints; i++)
+	{
+		// TODO: size of actual data?
+        // byteswap, decode, format change?
+        
+        ::memcpy(pBuffer, pChunkData, m_Common.sampleSize);
+        if (m_Common.sampleSize <= 8)
+        {
+            int shift = m_Common.sampleSize - 8;
+            if (shift > 0)
+            {
+                // align output when sample smaller than 8 bits
+                (*pBuffer) = ((*pBuffer) >> shift);
+            }
+        }
+        else if (m_Common.sampleSize <= 16)
+        {
+            // swap in output..
+            uint16_t *ptmp = (uint16_t*)pBuffer;
+            (*ptmp) = Swap2(*ptmp);
+            int shift = m_Common.sampleSize - 16;
+            if (shift > 0)
+            {
+                // align output when sample smaller than 16 bits
+                (*pBuffer) = ((*pBuffer) >> shift);
+            }
+        }
+        else
+        {
+            // sample sizes 17..32 bits,
+            // do we need some more advanced handling..?
+        }
+        
+        // align input according to input-sample size
+        pChunkData = (pChunkData + m_Common.sampleSize);
+
+        // align output according to output-sample size        
+        pBuffer = (pBuffer + nOutSampleSize);
+	}
+    
+    return (nOutPoints*nOutSampleSize);
 }
 

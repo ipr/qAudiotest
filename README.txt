@@ -2,8 +2,11 @@
 Simple tool to test Qt Audio output,
 experimental..
 
-Most of it is based on sample code somewhere.
+Author: Ilkka Prusi
+Contact: ilkka.prusi@gmail.com
 
 Plays RIFF-Wave, not much else yet..
-May work on it more to create actual player of it some day..
+Working on AIFF and AIFF-C currently, should finish 8SVX some day..
+
+May work on it more to create actual player later..
 

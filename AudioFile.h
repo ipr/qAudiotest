@@ -13,8 +13,6 @@
 #include <stdint.h>
 #include <string>
 
-// TODO: inherit from QIODevice?
-
 class AudioFile
 {
 protected:
@@ -45,8 +43,25 @@ public:
 	//virtual bool isSignedIntegerSample() = 0; // is signed/unsigned
 	//virtual long sampleDigitSize() = 0; // sizeof(digit) (byte/short/float..)
 	
-	virtual unsigned char *sampleData() = 0; // actual sample data (may need decode here)
+	virtual unsigned char *sampleData() = 0; // actual raw sample data 
 	virtual uint64_t sampleDataSize() = 0; // total size of sample data
+    
+    // optional decoding for playback
+    // TODO: additional options for conversion..?
+    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize) 
+    {
+        // nothing written to output
+        return 0;
+    }
+    
+    /*
+    // optional encoding&storage for recoding?
+    virtual uint64_t encode(const unsigned char *pData, const uint64_t nDataSize)
+    {
+        // nothing encoded from input
+        return 0;
+    }
+    */
 };
 
 #endif // AUDIOFILE_H

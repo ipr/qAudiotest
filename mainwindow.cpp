@@ -131,8 +131,6 @@ void MainWindow::onFileSelected(QString szFile)
 	format.setChannels(m_pAudioFile->channelCount());
 	format.setSampleSize(m_pAudioFile->sampleSize());
 	
-	// TODO: we may have 8-bit signed int..
-	//if (m_pAudioFile->sampleSize() > 8)
 	if (m_pAudioFile->isSigned() == true)
 	{
 		format.setSampleType(QAudioFormat::SignedInt);
@@ -148,17 +146,6 @@ void MainWindow::onFileSelected(QString szFile)
 		return;
 	}
 
-	double nFrame = ( format.channels() * format.sampleSize() / 8 );
-    double usInBuffer = ( (m_pAudioFile->sampleDataSize()*1000000ui64) / nFrame ) / format.frequency();
-	double dBuf = nFrame * format.frequency(); // should be size in bytes for one second
-	ui->horizontalSlider->setMaximum(usInBuffer/1000); // -> msec
-	ui->horizontalSlider->setMinimum(0);
-	ui->horizontalSlider->setValue(0);
-
-	m_nWritten = 0;
-	m_pSampleData = (char*)m_pAudioFile->sampleData();
-	m_nSampleSize = m_pAudioFile->sampleDataSize();
-	
 	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
     if (info.isNull() == true)
     {
@@ -172,7 +159,8 @@ void MainWindow::onFileSelected(QString szFile)
         // since default output on Windows doesn't support it..
         // also, at least AIFF supports various sample sizes 
         // so that may need handling also
-        // (shift to nearest 8/16 bits for Windows output if less than 32..)
+        // (shift to nearest 8/16 bits for Windows output),
+        // need some other way for larger sample sizes (upto 32 bits in AIFF)..
         
         ui->statusBar->showMessage("Unsupported audio-format");
         
@@ -189,7 +177,18 @@ void MainWindow::onFileSelected(QString szFile)
         dumpDeviceFormat(info);
 		return;
 	}
-	
+
+    double nFrame = ( format.channels() * format.sampleSize() / 8 );
+    double usInBuffer = ( (m_pAudioFile->sampleDataSize()*1000000ui64) / nFrame ) / format.frequency();
+	double dBuf = nFrame * format.frequency(); // should be size in bytes for one second
+	ui->horizontalSlider->setMaximum(usInBuffer/1000); // -> msec
+	ui->horizontalSlider->setMinimum(0);
+	ui->horizontalSlider->setValue(0);
+    
+    m_nWritten = 0;
+	m_pSampleData = (char*)m_pAudioFile->sampleData();
+	m_nSampleSize = m_pAudioFile->sampleDataSize();
+    
 	m_pAudioOut = new QAudioOutput(format, this);
 	connect(m_pAudioOut, SIGNAL(stateChanged(QAudio::State)), this, SLOT(onAudioState(QAudio::State)));
 	connect(m_pAudioOut, SIGNAL(notify()), this, SLOT(onPlayNotify()));
