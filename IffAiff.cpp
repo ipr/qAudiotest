@@ -223,6 +223,14 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
             // for compression handling object
             m_pCompression = GetCompression(pChunk, pChunkData);
         }
+        /*
+        else
+        {
+            // big-endian data on little-endian CPU
+            // -> byteswap needed while decoding..
+            //pCompression = new CAifcSowt();
+        }
+        */
 	}
 	else if (pChunk->m_iChunkID == MakeTag("SSND"))
 	{

@@ -10,6 +10,7 @@
 #include <QMainWindow>
 
 #include <QFile>
+#include <QModelIndex>
 #include <QtMultimedia/QAudioOutput>
 
 #include "AudioFile.h"
@@ -40,9 +41,14 @@ private slots:
 	void on_actionPlay_triggered();
 	void on_actionStop_triggered();
 	
+    void on_listWidget_doubleClicked(const QModelIndex &index);
 	
 	void on_actionAbout_triggered();
 	
+
+protected:
+    void dumpDeviceFormat(QAudioDeviceInfo info);
+    
 private:
     Ui::MainWindow *ui;
 	AudioFile *m_pAudioFile;

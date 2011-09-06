@@ -405,7 +405,7 @@ public:
 		}
         
         // count position of data (we may have offset to certain frame..)
-        uint8_t *pChunkData = CIffContainer::GetViewByOffset(pDataChunk->m_iOffset, pFile);
+        uint8_t *pChunkData = CIffContainer::GetViewByOffset(pDataChunk->m_iOffset, m_File);
         return (pChunkData + m_SoundData.offset);
 	}
 	

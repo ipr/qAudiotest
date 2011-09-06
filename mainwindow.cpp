@@ -160,9 +160,29 @@ void MainWindow::onFileSelected(QString szFile)
 	m_nSampleSize = m_pAudioFile->sampleDataSize();
 	
 	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+    if (info.isNull() == true)
+    {
+        ui->statusBar->showMessage("Failed to get default audio output");
+		return;
+    }
+    
 	if (info.isFormatSupported(format) == false) 
 	{
-		ui->statusBar->showMessage("Unsupported audio-format");
+        // note: means need to byteswap since default output doesn't support it..
+        
+        ui->statusBar->showMessage("Unsupported audio-format");
+        
+        qDebug() << "format not supported: "
+                    << "byteorder" << (int)format.byteOrder()
+                    << "chcount" << format.channelCount()
+                    << "frequ" << format.frequency()
+                    << "smprate" << format.sampleRate()
+                    << "smpsize" << format.sampleSize()
+                    << "smptype" << (int)format.sampleType()
+                    << "codec" << format.codec()
+                    << "\r\n";
+        
+        dumpDeviceFormat(info);
 		return;
 	}
 	
@@ -305,6 +325,25 @@ void MainWindow::on_actionStop_triggered()
 	}
 }
 
+void MainWindow::on_listWidget_doubleClicked(const QModelIndex &index)
+{
+    QListWidgetItem *pItem = ui->listWidget->item(index.row());
+	if (pItem == nullptr)
+	{
+		return;
+	}
+	
+	// TODO: check audio-state instead?
+	if (m_pAudioOut != nullptr)
+	{
+		// already playing?
+		//return;
+		on_actionStop_triggered();
+	}
+	
+	emit FileSelection(pItem->text());
+}
+
 void MainWindow::on_actionAbout_triggered()
 {
 	QTextEdit *pTxt = new QTextEdit(this);
@@ -323,3 +362,50 @@ void MainWindow::on_actionAbout_triggered()
 	pTxt->append("");
 	pTxt->show();
 }
+
+//debug: dump supported formats..
+void MainWindow::dumpDeviceFormat(QAudioDeviceInfo info)
+{
+    qDebug() << "endianess:";
+    foreach (QAudioFormat::Endian end, info.supportedByteOrders())
+    {
+        qDebug() << (int)end;
+    }
+    
+    qDebug() << "channel counts:";
+    foreach (int chcount, info.supportedChannelCounts())
+    {
+        qDebug() << chcount;
+    }
+
+    qDebug() << "frequencies:";
+    foreach (int frequ, info.supportedFrequencies())
+    {
+        qDebug() << frequ;
+    }
+    
+    qDebug() << "sample rates:";
+    foreach (int samplerate, info.supportedSampleRates())
+    {
+        qDebug() << samplerate;
+    }
+    
+    qDebug() << "sample sizes:";
+    foreach (int samplesize, info.supportedSampleSizes())
+    {
+        qDebug() << samplesize;
+    }
+    
+    qDebug() << "sample types:";
+    foreach (int sampletype, info.supportedSampleTypes())
+    {
+        qDebug() << (int)sampletype;
+    }
+    
+    qDebug() << "codecs:";
+    foreach (QString codect, info.supportedCodecs())
+    {
+        qDebug() << codect;
+    }
+}
+
