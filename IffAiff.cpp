@@ -381,17 +381,33 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
 {
     // lazy.. just zero it
     ::memset(pBuffer, 0, nBufSize);
-    
+
+    // TODO: decompression support..
+    // different compressions such as alaw, adpcm etc.
+    /*
+    if (m_pCompression != nullptr)
+    {
+        return m_pCompression->decode(pBuffer, nBufSize);
+    }
+    */
     
     // sample points in each frame&channel
 	uint64_t nRawPointCount = m_Common.numSampleFrames * m_Common.numChannels;
+    
+    // count sample size in bytes:
+    // if not multiple of 8 reserve also remainder
+    int nRawSampleSize = m_Common.sampleSize/8;
+    if (m_Common.sampleSize % 8 != 0)
+    {
+        nRawSampleSize += 1;
+    }
 
     // TODO: need output format knowledge:
     // for now, assume 16-bit output
     // and align to that if different
     //
     int nOutSampleSize = 16;
-    uint64_t nOutPoints = (nBufSize / nOutSampleSize);
+    uint64_t nOutPoints = (nBufSize / (nOutSampleSize/8));
 	
     // raw sample data in bytes
     // TODO: check varying sample sizes, handle block align if not multiple of 8
@@ -402,10 +418,10 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
 		// TODO: size of actual data?
         // byteswap, decode, format change?
         
-        ::memcpy(pBuffer, m_pSoundData, m_Common.sampleSize);
+        ::memcpy(pBuffer, m_pSoundData, nRawSampleSize);
         if (m_Common.sampleSize <= 8)
         {
-            int shift = m_Common.sampleSize - 8;
+            int shift = (8 - m_Common.sampleSize);
             if (shift > 0)
             {
                 // align output when sample smaller than 8 bits
@@ -418,7 +434,7 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
             // swap in output..
             uint16_t *ptmp = (uint16_t*)pBuffer;
             (*ptmp) = Swap2(*ptmp);
-            int shift = m_Common.sampleSize - 16;
+            int shift = (16 - m_Common.sampleSize);
             if (shift > 0)
             {
                 // align output when sample smaller than 16 bits
@@ -434,12 +450,12 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
         
         // align input according to input-sample size,
         // no padding
-        m_pSoundData = (m_pSoundData + m_Common.sampleSize);
+        m_pSoundData = (m_pSoundData + nRawSampleSize);
 
         // align output according to output-sample size        
-        pBuffer = (pBuffer + nOutSampleSize);
+        pBuffer = (pBuffer + (nOutSampleSize/8));
 	}
     
-    return (nOutPoints*nOutSampleSize);
+    return (nOutPoints*(nOutSampleSize/8));
 }
 
