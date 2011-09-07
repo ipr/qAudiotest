@@ -90,7 +90,7 @@ protected:
 	WORD m_wBitsPerSample; // extension to 'fmt ' chunk when format is: fmt_WAVE_FORMAT_PCM
 	
 protected:
-	void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
+	//void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	
 	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	

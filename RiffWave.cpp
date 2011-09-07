@@ -10,13 +10,22 @@
 
 //////////////////// protected methods
 
+// Sound data format is just about same as Windows API expects
+// -> no conversion on Win32..
+// Metadata parsing is about all there is now 
+// -> no need for this now, may need for other platforms.
+//
+// In stereo (2ch) format channel order is: left, right
+// Maximum of only 2 channels supported anyway??
+//
+/*
 void CRiffWave::Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 {
 	uint8_t *pChunkData = CRiffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
 	
 	// decode when actual playback
 }
-
+*/
 
 void CRiffWave::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 {

@@ -377,6 +377,15 @@ bool CIffAiff::ParseFile(const std::wstring &szFileName)
 }
 
 // TODO: additional options for conversion?
+//
+// TODO: check that channel order in output can be same as in raw data..
+// AIFF channel order:
+// stereo: left, right
+// 3ch : left, right, center
+// quad: front left, front right, rear left, rear right
+// 4ch : left, center, right, surround
+// 6ch : left, left center, center, right, right center, surround
+//
 uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/)
 {
     // lazy.. just zero it
@@ -391,7 +400,10 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
     }
     */
     
-    // sample points in each frame&channel
+    // sample points in each frame&channel:
+    // point is single channel in single frame,
+    // point size may vary.. (1-32 bits)
+    //
 	uint64_t nRawPointCount = m_Common.numSampleFrames * m_Common.numChannels;
     
     // count sample size in bytes:
@@ -407,17 +419,22 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
     // and align to that if different
     //
     int nOutSampleSize = 16;
-    uint64_t nOutPoints = (nBufSize / (nOutSampleSize/8));
+    if (m_Common.sampleSize <= 8)
+    {
+        // quick hack for something close..
+        nOutSampleSize = 8;
+    }
+    int nOutSampleLen = (nOutSampleSize/8); // in bytes to simplify
+    uint64_t nOutPoints = (nBufSize / nOutSampleLen);
 	
     // raw sample data in bytes
     // TODO: check varying sample sizes, handle block align if not multiple of 8
     //uint64_t nSampleData = (m_Common.numSampleFrames * m_Common.numChannels * m_Common.sampleSize);
-    
+
+    // byteswap, size adjustment etc.
+    //    
 	for (uint64_t i = 0; i < nRawPointCount && i < nOutPoints; i++)
 	{
-		// TODO: size of actual data?
-        // byteswap, decode, format change?
-        
         ::memcpy(pBuffer, m_pSoundData, nRawSampleSize);
         if (m_Common.sampleSize <= 8)
         {
@@ -446,6 +463,17 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
         {
             // sample sizes 17..32 bits,
             // do we need some more advanced handling..?
+            // resampling?
+            // (windows has maximum of 16 bits size anyway it seems..)
+            //
+            // can we just shift and drop precision of it??
+            // 
+            // swap in output..
+            // then shift to reduce length to what we are limited to?
+            //
+            //uint32_t *ptmp = (uint32_t*)pBuffer;
+            //(*ptmp) = Swap4(*ptmp);
+            //int shift = (m_Common.sampleSize - 16);
         }
         
         // align input according to input-sample size,
@@ -453,9 +481,9 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
         m_pSoundData = (m_pSoundData + nRawSampleSize);
 
         // align output according to output-sample size        
-        pBuffer = (pBuffer + (nOutSampleSize/8));
+        pBuffer = (pBuffer + nOutSampleLen);
 	}
     
-    return (nOutPoints*(nOutSampleSize/8));
+    return (nOutPoints*nOutSampleLen);
 }
 
