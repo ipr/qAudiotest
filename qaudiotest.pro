@@ -20,7 +20,8 @@ SOURCES += main.cpp\
     RiffWave.cpp \
     RiffContainer.cpp \
     IffAiff.cpp \
-    ieee.c
+    ieee.c \
+    DeviceCaps.cpp
 
 HEADERS  += mainwindow.h \
     FileType.h \
@@ -32,8 +33,13 @@ HEADERS  += mainwindow.h \
     IffAiff.h \
     AudioFile.h \
     IffChunk.h \
-    ieee.h
+    ieee.h \
+    DeviceCaps.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    DeviceCaps.ui
+
+
+
 
 

@@ -43,6 +43,7 @@
    <addaction name="actionPlay"/>
    <addaction name="actionStop"/>
    <addaction name="actionAbout"/>
+   <addaction name="actionDevice"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionFile">
@@ -83,6 +84,14 @@
    </property>
    <property name="shortcut">
     <string>?</string>
+   </property>
+  </action>
+  <action name="actionDevice">
+   <property name="text">
+    <string>Device</string>
+   </property>
+   <property name="toolTip">
+    <string>Output device</string>
    </property>
   </action>
  </widget>

@@ -46,6 +46,8 @@ private slots:
 	void on_actionAbout_triggered();
 	
 
+    void on_actionDevice_triggered();
+    
 protected:
     void dumpDeviceFormat(QAudioDeviceInfo info);
     

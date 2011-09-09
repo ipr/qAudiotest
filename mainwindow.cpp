@@ -14,6 +14,10 @@
 // for testing
 #include <QThread>
 
+// device capabilities dialog
+#include "DeviceCaps.h"
+
+
 #include "FileType.h"
 #include "MemoryMappedFile.h"
 
@@ -474,3 +478,11 @@ void MainWindow::dumpDeviceFormat(QAudioDeviceInfo info)
     }
 }
 
+void MainWindow::on_actionDevice_triggered()
+{
+    DeviceCaps *pDlg = new DeviceCaps(this);
+    
+    // TODO: connect selection of device..
+    
+    pDlg->show();
+}
