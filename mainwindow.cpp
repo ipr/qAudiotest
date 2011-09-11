@@ -483,6 +483,7 @@ void MainWindow::on_actionDevice_triggered()
     DeviceCaps *pDlg = new DeviceCaps(this);
     
     // TODO: connect selection of device..
+    //connect(pDlg, SIGNAL(selectedDevice), this, SLOT(device..));
     
     pDlg->show();
 }

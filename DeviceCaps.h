@@ -16,6 +16,13 @@ class DeviceCaps : public QDialog
 public:
     explicit DeviceCaps(QWidget *parent = 0);
     ~DeviceCaps();
+    
+signals:
+    // TODO: signal selected output device
+    //void selectedDevice();
+    
+protected slots:
+    void deviceSelection(int dev);
 
 protected:
     void showDeviceCaps();
