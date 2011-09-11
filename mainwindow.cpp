@@ -226,11 +226,11 @@ void MainWindow::onFileSelected(QString szFile)
     else
     {
         // need buffer for decoding -> allocate it
-        m_nSampleDataSize = dBuf;
-        m_pSampleData = new char[m_nSampleDataSize];
+        m_nBufferSize = dBuf;
+        m_pSampleData = new char[m_nBufferSize];
         
         // TODO: keep actual buffer size somewhere..
-        m_nSampleDataSize = m_pAudioFile->decode((uchar*)m_pSampleData, m_nSampleDataSize /*, &format*/);
+        m_nSampleDataSize = m_pAudioFile->decode((uchar*)m_pSampleData, m_nBufferSize /*, &format*/);
     }
     
 	m_pAudioOut = new QAudioOutput(format, this);
@@ -268,19 +268,6 @@ void MainWindow::onFileSelected(QString szFile)
 	m_nWritten += nWritten;
 }
 
-void MainWindow::onAudioState(QAudio::State enState)
-{
-	if (enState == QAudio::ActiveState)
-	{
-		ui->horizontalSlider->show();
-	}
-	else if (enState == QAudio::StoppedState)
-	{
-		// show that we stopped
-		ui->horizontalSlider->hide();
-	}
-}
-
 // triggered on certain intervals (set to output-device)
 void MainWindow::onPlayNotify()
 {
@@ -296,7 +283,7 @@ void MainWindow::onPlayNotify()
     else
     {
         // TODO: keep actual buffer size somewhere..
-        m_nSampleDataSize = m_pAudioFile->decode((uchar*)m_pSampleData, m_nSampleDataSize /*, &format*/);
+        m_nSampleDataSize = m_pAudioFile->decode((uchar*)m_pSampleData, m_nBufferSize /*, &format*/);
     }
     
 	qint64 nWritten = m_pDevOut->write(m_pSampleData, m_nSampleDataSize);
@@ -312,6 +299,19 @@ void MainWindow::onPlayNotify()
 	// TODO: catch user positioning of slider..
 	int iValue = ui->horizontalSlider->value();
 	ui->horizontalSlider->setValue(iValue + 250);
+}
+
+void MainWindow::onAudioState(QAudio::State enState)
+{
+	if (enState == QAudio::ActiveState)
+	{
+		ui->horizontalSlider->show();
+	}
+	else if (enState == QAudio::StoppedState)
+	{
+		// show that we stopped
+		ui->horizontalSlider->hide();
+	}
 }
 
 void MainWindow::on_actionFile_triggered()

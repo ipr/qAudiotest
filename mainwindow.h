@@ -34,8 +34,8 @@ signals:
 private slots:
 	void onFileSelected(QString szFile);
 	
-	void onAudioState(QAudio::State enState);
 	void onPlayNotify();
+    void onAudioState(QAudio::State enState);
 	
 	void on_actionFile_triggered();
 	void on_actionPlay_triggered();
@@ -59,8 +59,9 @@ private:
 	
 	// temp, push-mode
 	qint64 m_nWritten;
+    qint64 m_nSampleDataSize;
 	char *m_pSampleData;
-	qint64 m_nSampleDataSize;
+    qint64 m_nBufferSize;
     bool m_bDecodeNeeded;
 };
 
