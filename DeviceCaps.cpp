@@ -15,25 +15,7 @@ DeviceCaps::DeviceCaps(QWidget *parent) :
 	headers << "Device"
             << "Capability"
             << "Value";
-    /*
-            << "Frequency"
-            << "Sample rate"
-            << "Sample size"
-            << "Sample type"
-            << "Codec";
-            */
     
-    /*
-    << "device: " << info.deviceName()
-    << "byteorder: " << (int)format.byteOrder()
-    << "channel count: " << format.channelCount()
-    << "frequency: " << format.frequency()
-    << "samplerate: " << format.sampleRate()
-    << "samplesize: " << format.sampleSize()
-    << "sampletype: " << (int)format.sampleType()
-    << "codec: " << format.codec();
-    */
-
     ui->treeWidget->setColumnCount(headers.size());    
 	ui->treeWidget->setHeaderLabels(headers);
     

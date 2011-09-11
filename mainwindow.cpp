@@ -208,7 +208,7 @@ void MainWindow::onFileSelected(QString szFile)
 		return;
 	}
 
-    double nFrame = ( format.channels() * format.sampleSize() / 8 );
+    double nFrame = ( format.channels() * (format.sampleSize() / 8));
     double usInBuffer = ( (m_pAudioFile->sampleDataSize()*1000000ui64) / nFrame ) / format.frequency();
 	double dBuf = nFrame * format.frequency(); // should be size in bytes for one second
 	ui->horizontalSlider->setMaximum(usInBuffer/1000); // -> msec

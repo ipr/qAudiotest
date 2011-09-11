@@ -463,17 +463,23 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
         {
             // sample sizes 17..32 bits,
             // do we need some more advanced handling..?
-            // resampling?
-            // (windows has maximum of 16 bits size anyway it seems..)
             //
-            // can we just shift and drop precision of it??
-            // 
-            // swap in output..
-            // then shift to reduce length to what we are limited to?
-            //
-            //uint32_t *ptmp = (uint32_t*)pBuffer;
-            //(*ptmp) = Swap4(*ptmp);
-            //int shift = (m_Common.sampleSize - 16);
+            uint32_t *ptmp = (uint32_t*)pBuffer;
+            (*ptmp) = Swap4(*ptmp);
+            
+            // check direction, shift to smaller/larger?
+            if (m_Common.sampleSize > nOutSampleSize)
+            {
+                // 32 "raw", 16 out?
+                int shift = (m_Common.sampleSize - nOutSampleSize);
+                (*ptmp) = ((*ptmp) >> shift);
+            }
+            else
+            {
+                // 16 "raw", 24 out?
+                int shift = (nOutSampleSize - m_Common.sampleSize);
+                (*ptmp) = ((*ptmp) << shift);
+            }
         }
         
         // align input according to input-sample size,
