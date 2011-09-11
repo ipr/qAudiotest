@@ -377,8 +377,8 @@ bool CIffAiff::ParseFile(const std::wstring &szFileName)
 }
 
 // TODO: additional options for conversion?
+// supported sample size, frequency etc.
 //
-// TODO: check that channel order in output can be same as in raw data..
 // AIFF channel order:
 // stereo: left, right
 // 3ch : left, right, center
@@ -431,53 +431,98 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
     // TODO: check varying sample sizes, handle block align if not multiple of 8
     //uint64_t nSampleData = (m_Common.numSampleFrames * m_Common.numChannels * m_Common.sampleSize);
 
-    // byteswap, size adjustment etc.
+    // if raw and out have different widths,
+    // determine amount and direction to align with
+    // (even out odd sized samples).
+    //
+    bool bShiftUp = false;
+    int shift = 0;
+    if (m_Common.sampleSize < 8)
+    {
+        shift = (8 - m_Common.sampleSize);
+        bShiftUp = true;
+    }
+    else if (m_Common.sampleSize <= 16)
+    {
+        shift = (16 - m_Common.sampleSize);
+        bShiftUp = true;
+    }
+    else
+    {
+        if (m_Common.sampleSize > nOutSampleSize)
+        {
+            // 32 "raw", 16 out?
+            shift = (m_Common.sampleSize - nOutSampleSize);
+            bShiftUp = false;
+        }
+        else
+        {
+            // 16 "raw", 24 out?
+            shift = (nOutSampleSize - m_Common.sampleSize);
+            bShiftUp = true;
+        }
+    }
+    
+    if (m_SoundData.blockSize != 0)
+    {
+        // need take care of block-align,
+        // may have padding etc.?
+    }
+    
+    // byteswap, align etc.
     //    
 	for (uint64_t i = 0; i < nRawPointCount && i < nOutPoints; i++)
 	{
         ::memcpy(pBuffer, m_pSoundData, nRawSampleSize);
-        if (m_Common.sampleSize <= 8)
+        if (nOutSampleSize < 8 && bShiftUp == true && shift != 0)
         {
-            int shift = (8 - m_Common.sampleSize);
-            if (shift > 0)
-            {
-                // align output when sample smaller than 8 bits
-                //(*pBuffer) = ((*pBuffer) >> shift);
-                (*pBuffer) = ((*pBuffer) << shift);
-            }
+            // align output when sample smaller than 8 bits
+            (*pBuffer) = ((*pBuffer) << shift);
         }
-        else if (m_Common.sampleSize <= 16)
+        else if (nOutSampleSize > 8 && nOutSampleSize <= 16)
         {
-            // swap in output..
+            // byteswap in output..
             uint16_t *ptmp = (uint16_t*)pBuffer;
             (*ptmp) = Swap2(*ptmp);
-            int shift = (16 - m_Common.sampleSize);
-            if (shift > 0)
+            
+            if (shift != 0 && bShiftUp == true)
             {
                 // align output when sample smaller than 16 bits
-                //(*ptmp) = ((*ptmp) >> shift);
                 (*ptmp) = ((*ptmp) << shift);
             }
         }
-        else
+        else if (nOutSampleSize > 16 && nOutSampleSize <= 24)
         {
-            // sample sizes 17..32 bits,
-            // do we need some more advanced handling..?
-            //
+            // three bytes..
+            // byteswap in four with highest as zero for overwriting
+            uint32_t *ptmp = (uint32_t*)pBuffer;
+            (*ptmp) = (Swap4((*ptmp) & 0x00FFFFFF) >> 8);
+            
+            if (shift != 0 && bShiftUp == true)
+            {
+                // align output when sample smaller than output
+                (*ptmp) = ((*ptmp) << shift);
+            }
+            else if (shift != 0 && bShiftUp == false)
+            {
+                // align output when sample larger than output
+                (*ptmp) = ((*ptmp) >> shift);
+            }
+        }
+        else if (nOutSampleSize > 24 && nOutSampleSize <= 32)
+        {
+            // four bytes
             uint32_t *ptmp = (uint32_t*)pBuffer;
             (*ptmp) = Swap4(*ptmp);
             
-            // check direction, shift to smaller/larger?
-            if (m_Common.sampleSize > nOutSampleSize)
+            if (shift != 0 && bShiftUp == true)
             {
-                // 32 "raw", 16 out?
-                int shift = (m_Common.sampleSize - nOutSampleSize);
-                (*ptmp) = ((*ptmp) >> shift);
+                // align output when sample smaller than output
+                (*ptmp) = ((*ptmp) << shift);
             }
-            else
+            else if (shift != 0 && bShiftUp == false)
             {
-                // 16 "raw", 24 out?
-                int shift = (nOutSampleSize - m_Common.sampleSize);
+                // align output when sample larger than output
                 (*ptmp) = ((*ptmp) << shift);
             }
         }
