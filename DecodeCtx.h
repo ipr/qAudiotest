@@ -47,6 +47,11 @@ protected:
     // bytes per second:
     // filesize / (framesize * sample rate)
     double m_dBytesPerSecond;
+    
+    // TODO:
+    // duration of single frame in fractions of second?
+    // (for timing-conversions?)
+    //double m_dFrameDuration;
 
     // channel count: amount of channels per frame
     // sample size: sample width in bits    
@@ -66,6 +71,16 @@ protected:
     {
         m_dBytesPerSecond = (fileSize / (m_nFrameSize * dSampleRate));
     }
+    
+    //
+    // TODO: helper conversions?
+    // some mods have stuff like VBlank/VSync value for timing
+    // which need to be converted for playback on entirely different hardware..
+    // some use stuff like CPU jiffies/ticks for timing values..
+    // need some cross-platform timing support such that
+    // duration = (base-frequency / dividend) .. where duration is some suitable unit..
+    // e.g. dur = 50.0MHz / 2 -> 25.0MHz
+    // 
     
 public:
     DecodeCtx() 
