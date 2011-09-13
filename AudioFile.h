@@ -13,20 +13,37 @@
 #include <stdint.h>
 #include <string>
 
+// playback status&control
+#include "DecodeCtx.h"
+
 // fwd. decl. for type supported by device
 /*class QAudioFormat;*/
 
 class AudioFile
 {
 protected:
+    
+    // TODO: implement details, allow derived implementations
+    // use for common status&controls
+    //
+    DecodeCtx *m_pDecodeCtx;
+    
+protected:
 	// must be inherited to create instance
 	AudioFile(void) 
+        : m_pDecodeCtx(nullptr)
 	{}
 
 public:
 	// "anyone" can destroy inherited..
 	virtual ~AudioFile(void) 
-	{}
+	{
+        if (m_pDecodeCtx != nullptr)
+        {
+            delete m_pDecodeCtx;
+            m_pDecodeCtx = nullptr;
+        }
+    }
 	
 	virtual bool ParseFile(const std::wstring &szFileName) = 0;
 
@@ -48,6 +65,13 @@ public:
 	
 	virtual unsigned char *sampleData() = 0; // actual raw sample data 
 	virtual uint64_t sampleDataSize() = 0; // total size of sample data
+    
+    // allow main app to access for play-control and status-display
+    // (e.g. moving in file, showing position etc.)
+    DecodeCtx *getDecodeCtx()
+    {
+        return m_pDecodeCtx;
+    }
     
     // optional decoding for playback
     // TODO: additional options for conversion..?

@@ -26,6 +26,8 @@
 // interface to define in audio-file
 #include "AudioFile.h"
 
+// playback status&control
+#include "DecodeCtx.h"
 
 // std::string, for keeping sample&copyright descriptions
 #include <string>
@@ -322,7 +324,6 @@ protected:
 	
 	typedef std::vector<Comment> tCommentList;
 	tCommentList m_Comments;
-	
 	
 protected:
 

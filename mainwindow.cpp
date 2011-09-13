@@ -21,6 +21,9 @@
 #include "FileType.h"
 #include "MemoryMappedFile.h"
 
+// playback status&control
+#include "DecodeCtx.h"
+
 #include "Iff8svx.h"
 #include "IffAiff.h"
 #include "RiffWave.h"
@@ -207,7 +210,14 @@ void MainWindow::onFileSelected(QString szFile)
         dumpDeviceFormat(info);
 		return;
 	}
+    
+    // get context before playback for status display and control
+    //
+    m_pDecodeCtx = m_pAudioFile->getDecodeCtx();
 
+    // TODO: keep frame count during playback for offset of current position?
+    //double nFrameCount = m_pAudioFile->sampleDataSize() / (format.channels() * (format.sampleSize() / 8));
+    
     double nFrame = ( format.channels() * (format.sampleSize() / 8));
     double usInBuffer = ( (m_pAudioFile->sampleDataSize()*1000000ui64) / nFrame ) / format.frequency();
 	double dBuf = nFrame * format.frequency(); // should be size in bytes for one second

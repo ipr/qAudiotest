@@ -13,6 +13,7 @@
 #include <QModelIndex>
 #include <QtMultimedia/QAudioOutput>
 
+#include "DecodeCtx.h"
 #include "AudioFile.h"
 
 
@@ -53,6 +54,7 @@ protected:
     
 private:
     Ui::MainWindow *ui;
+    DecodeCtx *m_pDecodeCtx;
 	AudioFile *m_pAudioFile;
 	QAudioOutput *m_pAudioOut;
 	QIODevice *m_pDevOut;

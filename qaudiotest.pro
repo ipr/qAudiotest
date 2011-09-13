@@ -34,10 +34,12 @@ HEADERS  += mainwindow.h \
     AudioFile.h \
     IffChunk.h \
     ieee.h \
-    DeviceCaps.h
+    DeviceCaps.h \
+    DecodeCtx.h
 
 FORMS    += mainwindow.ui \
     DeviceCaps.ui
+
 
 
 

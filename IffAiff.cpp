@@ -349,6 +349,8 @@ CIffAiff::CIffAiff(void)
     , m_pCompression(nullptr)
     //, m_pSoundData(nullptr)
 {
+    // use default implementation only?
+    m_pDecodeCtx = new DecodeCtx();
 }
 
 CIffAiff::~CIffAiff(void)
@@ -399,6 +401,10 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
         return m_pCompression->decode(pBuffer, nBufSize);
     }
     */
+    
+    // TODO: on first call/before that: initializations
+    m_pDecodeCtx->m_nFrameCount = m_Common.numSampleFrames;
+    m_pDecodeCtx->updatePos(0); // start
     
     // sample points in each frame&channel:
     // point is single channel in single frame,
