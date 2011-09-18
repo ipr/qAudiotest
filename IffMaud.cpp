@@ -81,7 +81,7 @@ bool CIffMaud::ParseFile(const std::wstring &szFileName)
 
 // notes on channel format:
 // channel order: left, right, surround..
-// (see header)
+// (see header), left always comes first
 //
 // same way as with AIFF?
 //

@@ -28,6 +28,7 @@
 #include "IffMaud.h"
 #include "IffAiff.h"
 #include "RiffWave.h"
+#include "Maestro.h"
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -112,6 +113,10 @@ void MainWindow::onFileSelected(QString szFile)
 	else if (Type.m_enFileType == HEADERTYPE_WAVE)
 	{
 		m_pAudioFile = new CRiffWave();
+	}
+	else if (Type.m_enFileType == HEADERTYPE_MAESTRO)
+	{
+		m_pAudioFile = new CMaestro();
 	}
 	
 	if (m_pAudioFile == nullptr)

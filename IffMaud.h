@@ -114,7 +114,10 @@ public:
 	
 	virtual long channelCount()
 	{
-		return m_MaudHeader.mhdr_Channels;
+		// enumeration, not actual count
+		// definitions
+		//return m_MaudHeader.mhdr_Channels;
+		return 0;
 	}
 	
 	virtual unsigned long sampleRate()
@@ -133,10 +136,9 @@ public:
 	
 	virtual bool isSigned()
 	{
-		// note: signed if size is not exact multiple of 8,
-		// unsigned if exact multiple
-		// (such as 8/8==1)
-		if ((m_MaudHeader.mhdr_SampleSizeU % 8) != 0)
+		// only 8-bit samples are stored unsigned,
+		// all other sizes are signed..
+		if (m_MaudHeader.mhdr_SampleSizeU != 8)
 		{
 			// signed
 			return true;
