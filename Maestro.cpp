@@ -40,41 +40,25 @@ bool CMaestro::ParseFile(const std::wstring &szFileName)
 		return false;
 	}
 	
-	uint8_t version = pView[8];
-	uint8_t revision = pView[9];
-	uint8_t file_version = pView[10]; // always 0x02
-	uint8_t padding = pView[11]; // always 0x00
-
-	// TODO: byteswap rest..	
+	MaestroHeader_t *pHdr = (MaestroHeader_t*)(pView+0x08);
+	m_MaestroHeader.version = pHdr->version;
+	m_MaestroHeader.revision = pHdr->revision;
+	m_MaestroHeader.file_version = pHdr->file_version;
+	m_MaestroHeader.padding1 = pHdr->padding1;
+	m_MaestroHeader.sampletype = Swap2(pHdr->sampletype);
+	m_MaestroHeader.padding2 = Swap2(pHdr->padding2);
+	m_MaestroHeader.samplecount = Swap4(pHdr->samplecount);
+	m_MaestroHeader.samplerate = Swap4(pHdr->samplerate);
 	
-	/*
-	Sample type is:
-	  0x0000 = Stereo, 16 bit
-	  0x0001 = Stereo, 8 bit
-	  0x0002 = Mono, 16 bit
-	  0x0003 = Mono, 8 bit
-
-	New:-
-
-	  0x0004 = Stereo, 24 bit
-	  0x0005 = Mono, 24 bit
-	  0x0006 = Stereo, 32 bit
-	  0x0007 = Mono, 32 bit
-	  0x0008 = Stereo, 32 bit, IEEE float
-	  0x0009 = Mone, 32 bit, IEEE float
-	  0x000A = Stereo, 64 bit, IEEE float
-	  0x000B = Mono, 64 bit, IEEE float
-	  0x000C = Stereo, 32 bit, FFP float
-	  0x000D = Mono, 32 bit, FFP float
-
-	  only sampling rates of 32000 Hz, 44100 Hz or 48000 Hz should be used
-	*/
+	// if not supported -> end
+	if (m_MaestroHeader.file_version != 0x02)
+	{
+		return false;
+	}
 	
-	uint16_t sampletype = (*((uint16_t*)(pView + 0x0C)));
-	uint16_t padding = (*((uint16_t*)(pView + 0x0E)));
-	uint32_t samplecount = (*((uint32_t*)(pView + 0x10))); // amount of samples
-	uint32_t samplerate = (*((uint32_t*)(pView + 0x14))); // in Hz
-
+	// simplify type-info for later..
+	m_SampleInfo.setTypeInfo(m_MaestroHeader.sampletype);
+	
 	// rest is sample data..
 	
 	return true;
