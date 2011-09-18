@@ -39,6 +39,16 @@ MCI_MULTISTEREO  equ  3  ;stereo multichannel (channels must be 4, 6, 8, ...)
 MCI_MULTICHANNEL equ  4  ;multichannel (requires additional MINF-chunks) (future)
 */
 
+// see details on asm-definitions above
+enum MaudChannelInfo
+{
+	MCI_MONO = 0,			// mono
+	MCI_STEREO = 1,			// stereo
+	MCI_MULTIMONO = 2,		// mono multichannel
+	MCI_MULTISTEREO = 3,	// stereo multichannel
+	MCI_MULTICHANNEL = 4	// multichannel (for future)
+};
+
 /* mhdr_Compression
 MCOMP_NONE       equ  0  ;no compression
 MCOMP_FIBDELTA   equ  1  ;'Fibonacci Delta Compression' as used in 8SVX
@@ -51,18 +61,34 @@ MCOMP_ADPCM5     equ  7  ;16->5 bit, ADPCM compression
 MCOMP_LONGDAT    equ  8  ;16->12 bit, used for DAT-longplay
 */
 
+// see details on asm-definitions above
+enum MaudCompression
+{
+	MCOMP_NONE       =  0,
+	MCOMP_FIBDELTA   =  1,
+	MCOMP_ALAW       =  2,
+	MCOMP_ULAW       =  3,
+	MCOMP_ADPCM2     =  4,
+	MCOMP_ADPCM3     =  5,
+	MCOMP_ADPCM4     =  6,
+	MCOMP_ADPCM5     =  7,
+	MCOMP_LONGDAT    =  8
+};
+
+
 #pragma pack(push, 1)
 
+// names from documentation as-is
 typedef struct 
 {
-	uint32_t mhdr_Samples; // number of samples stored in MDAT
-	uint16_t mhdr_SampleSizeC; // number of bits per sample as stored in MDAT
-	uint16_t mhdr_SampleSizeU; // number of bits per sample after decompression
-	uint32_t mhdr_RateSource; // clock source frequency
-	uint16_t mhdr_RateDevide; // clock devide
-	uint16_t mhdr_ChannelInfo; // channel information (see below)
-	uint16_t mhdr_Channels; // number of channels (mono: 1, stereo: 2, ...)
-	uint16_t mhdr_Compression; // compression type (see below)
+	uint32_t mhdr_Samples;		// number of samples stored in MDAT
+	uint16_t mhdr_SampleSizeC;	// number of bits per sample as stored in MDAT
+	uint16_t mhdr_SampleSizeU;	// number of bits per sample after decompression
+	uint32_t mhdr_RateSource;	// clock source frequency
+	uint16_t mhdr_RateDevide;	// clock devide
+	uint16_t mhdr_ChannelInfo;	// channel information (see below)
+	uint16_t mhdr_Channels;		// number of channels (mono: 1, stereo: 2, ...)
+	uint16_t mhdr_Compression;	// compression type (see below)
 	uint32_t mhdr_Reserved1;
 	uint32_t mhdr_Reserved2;
 	uint32_t mhdr_Reserved3;
@@ -111,13 +137,16 @@ public:
 	{
 		return true;
 	}
+	virtual bool isInteger()
+	{
+		return true;
+	}
 	
 	virtual long channelCount()
 	{
-		// enumeration, not actual count
-		// definitions
-		//return m_MaudHeader.mhdr_Channels;
-		return 0;
+		// note enumeration in mhdr_ChannelInfo
+		//
+		return m_MaudHeader.mhdr_Channels;
 	}
 	
 	virtual unsigned long sampleRate()

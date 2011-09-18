@@ -12,6 +12,8 @@
 
 #include <stdint.h>
 
+#include <string>
+
 // chunk-node types
 #include "IffChunk.h"
 

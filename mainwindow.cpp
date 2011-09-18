@@ -21,6 +21,7 @@
 #include "FileType.h"
 #include "MemoryMappedFile.h"
 
+
 // playback status&control
 #include "DecodeCtx.h"
 
@@ -30,6 +31,9 @@
 #include "RiffWave.h"
 #include "Maestro.h"
 
+// for buffer implementation only..
+#include "AnsiFile.h"
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -37,6 +41,9 @@ MainWindow::MainWindow(QWidget *parent) :
     m_pAudioFile(nullptr),
 	m_pAudioOut(nullptr)
 {
+	// create once
+	m_pDecodeBuffer = new CReadBuffer();
+	
     ui->setupUi(this);
 	connect(this, SIGNAL(FileSelection(QString)), this, SLOT(onFileSelected(QString)));
 	
@@ -132,21 +139,21 @@ void MainWindow::onFileSelected(QString szFile)
 		ui->statusBar->showMessage("Failure reading file");
 		return;
 	}
-	
-    // assume no need
-    m_bDecodeNeeded = false;
-    
+
+	// get context before playback for status display and control
+    //
+    m_pDecodeCtx = m_pAudioFile->getDecodeCtx();
+	// 
+
 	QAudioFormat format;
+	
+	// only one supported on Windows..
     format.setByteOrder(QAudioFormat::LittleEndian);
             
     /* TODO: check later if necessary to swap for output
         when output doesn't support byteswap itself (windows)
         for now assume it is needed 
     */
-    if (m_pAudioFile->isBigEndian() == true)
-    {
-        m_bDecodeNeeded = true;
-    }
 	
 	format.setCodec("audio/pcm");
 	format.setFrequency(m_pAudioFile->sampleRate());
@@ -175,7 +182,12 @@ void MainWindow::onFileSelected(QString szFile)
         format.setSampleSize(16);
     }
 	
-	if (m_pAudioFile->isSigned() == true)
+	if (m_pAudioFile->isInteger() == false)
+	{
+		// note: is this supported on Windows ever..?
+		format.setSampleType(QAudioFormat::Float);
+	}
+	else if (m_pAudioFile->isSigned() == true)
 	{
 		format.setSampleType(QAudioFormat::SignedInt);
 	}
@@ -220,38 +232,24 @@ void MainWindow::onFileSelected(QString szFile)
         dumpDeviceFormat(info);
 		return;
 	}
-    
-    // get context before playback for status display and control
-    //
-    m_pDecodeCtx = m_pAudioFile->getDecodeCtx();
 
-    // TODO: keep frame count during playback for offset of current position?
+	// TODO: keep frame count during playback for offset of current position?
     //double nFrameCount = m_pAudioFile->sampleDataSize() / (format.channels() * (format.sampleSize() / 8));
     
     double nFrame = ( format.channels() * (format.sampleSize() / 8));
     double usInBuffer = ( (m_pAudioFile->sampleDataSize()*1000000ui64) / nFrame ) / format.frequency();
 	double dBuf = nFrame * format.frequency(); // should be size in bytes for one second
+	
 	ui->horizontalSlider->setMaximum(usInBuffer/1000); // -> msec
 	ui->horizontalSlider->setMinimum(0);
 	ui->horizontalSlider->setValue(0);
     
+	// clear old
     m_nWritten = 0;
-    
-    if (m_bDecodeNeeded == false)
-    {
-        // just use memory mapped view, no other buffering
-        m_pSampleData = (char*)m_pAudioFile->sampleData();
-        m_nSampleDataSize = m_pAudioFile->sampleDataSize();
-    }
-    else
-    {
-        // need buffer for decoding -> allocate it
-        m_nBufferSize = dBuf;
-        m_pSampleData = new char[m_nBufferSize];
-        
-        // TODO: keep actual buffer size somewhere..
-        m_nSampleDataSize = m_pAudioFile->decode((uchar*)m_pSampleData, m_nBufferSize /*, &format*/);
-    }
+	m_pDecodeBuffer->PrepareBuffer(dBuf, false);
+
+	// initial decode: should be empty buffer
+	m_nInBufferSize = m_pAudioFile->decode(m_pDecodeBuffer->GetBegin(), m_pDecodeBuffer->GetSize());
     
     // dump first 32 bytes of output-data for debugging..
     QString hexDump; 
@@ -283,35 +281,32 @@ void MainWindow::onFileSelected(QString szFile)
 	QThread *pCur = QThread::currentThread();
 	pCur->setPriority(QThread::TimeCriticalPriority);
 	
-	// write initial
-	qint64 nWritten = m_pDevOut->write(m_pSampleData, m_nSampleDataSize);
+	// write initial data to device
+	qint64 nWritten = m_pDevOut->write(m_pDecodeBuffer->GetBegin(), m_nInBufferSize);
 	if (nWritten == -1)
 	{
 		on_actionStop_triggered();
 		return;
 	}
 	m_nWritten += nWritten;
+	
+	// if all did not fit to output,
+	// keep rest until playing again
+	if (m_nInBufferSize > nWritten)
+	{
+		m_nInBufferSize = (m_nInBufferSize - nWritten);
+		
+		// this should support overlapped move
+		::memmove(m_pDecodeBuffer->GetBegin(), m_pDecodeBuffer->GetBegin() + nWritten, m_nInBufferSize);
+	}
 }
 
 // triggered on certain intervals (set to output-device)
 void MainWindow::onPlayNotify()
 {
-	// test: only write on intervals (when some buffer has been consumed)
-	// to reduce CPU-load (no need write when buffer is nearly full..)
+	m_nInBufferSize += m_pAudioFile->Decode(m_pDecodeBuffer->GetBegin() + m_nInBufferSize, m_pDecodeBuffer->GetSize() - m_nInBufferSize );
     
-    if (m_bDecodeNeeded == false)
-    {
-        // just use memory mapped view of file as-is, move further
-        m_pSampleData = (m_pSampleData + m_nWritten);
-        m_nSampleDataSize = (m_nSampleDataSize - m_nWritten);
-    }
-    else
-    {
-        // TODO: keep actual buffer size somewhere..
-        m_nSampleDataSize = m_pAudioFile->decode((uchar*)m_pSampleData, m_nBufferSize /*, &format*/);
-    }
-    
-	qint64 nWritten = m_pDevOut->write(m_pSampleData, m_nSampleDataSize);
+	qint64 nWritten = m_pDevOut->write(m_pDecodeBuffer->GetBegin(), m_nInBufferSize);
 	if (nWritten == -1)
 	{
 		on_actionStop_triggered();
@@ -320,6 +315,16 @@ void MainWindow::onPlayNotify()
     
     // for next time
 	m_nWritten += nWritten;
+
+	// if all did not fit to output,
+	// keep rest until playing again
+	if (m_nInBufferSize > nWritten)
+	{
+		m_nInBufferSize = (m_nInBufferSize - nWritten);
+		
+		// this should support overlapped move
+		::memmove(m_pDecodeBuffer->GetBegin(), m_pDecodeBuffer->GetBegin() + nWritten, m_nInBufferSize);
+	}
 	
 	// TODO: catch user positioning of slider..
 	int iValue = ui->horizontalSlider->value();

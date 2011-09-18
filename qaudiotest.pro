@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     ieee.c \
     DeviceCaps.cpp \
     IffMaud.cpp \
-    Maestro.cpp
+    Maestro.cpp \
+    AnsiFile.cpp
 
 HEADERS  += mainwindow.h \
     FileType.h \
@@ -39,10 +40,13 @@ HEADERS  += mainwindow.h \
     DeviceCaps.h \
     DecodeCtx.h \
     IffMaud.h \
-    Maestro.h
+    Maestro.h \
+    AnsiFile.h
 
 FORMS    += mainwindow.ui \
     DeviceCaps.ui
+
+
 
 
 

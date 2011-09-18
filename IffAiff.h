@@ -364,6 +364,10 @@ public:
 	{
 		return true;
 	}
+	virtual bool isInteger()
+	{
+		return true;
+	}
 	virtual long channelCount()
 	{
 		return m_Common.numChannels;

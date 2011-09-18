@@ -128,6 +128,11 @@ public:
 		return true;
 	}
 	
+	virtual bool isInteger()
+	{
+		return true;
+	}
+	
 	virtual long channelCount()
 	{
 		// TODO: determine
@@ -148,7 +153,7 @@ public:
 	
 	virtual bool isSigned()
 	{
-		// always signed
+		// always signed (is it?)
 		return true;
 	}
 	
@@ -187,6 +192,9 @@ public:
 		}
 		return pDataChunk->m_iChunkSize;
 	}
+	
+	// TODO: additional options for conversion?
+    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/);
 };
 
 #endif // ifndef _IFF8SVX_H_

@@ -363,10 +363,8 @@ bool CIffAiff::ParseFile(const std::wstring &szFileName)
     // use default implementation here only
     m_pDecodeCtx = new DecodeCtx();
     
-    // (TODO: get rid of file size, it is wrong)
-    //m_pDecodeCtx->initialize(m_File.GetSize(),  = m_Common.numSampleFrames;
+    m_pDecodeCtx->initialize(channelCount(), sampleSize(), sampleRate());
     m_pDecodeCtx->updatePos(0); // start
-    
 
 	return true;
 }

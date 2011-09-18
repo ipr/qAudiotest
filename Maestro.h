@@ -113,6 +113,7 @@ struct MaestroSampleInfo_t
 	// TODO: always signed?
 	// always unsigned?
 	bool m_isSigned;
+	bool m_isInteger;
 	
 	MaestroValueType m_enValueType;
 	
@@ -122,6 +123,7 @@ struct MaestroSampleInfo_t
 		m_channelCount = 0;
 		m_sampleWidth = 0;
 		m_isSigned = false;
+		m_isInteger = false;
 		m_enValueType = MSMT_UNKNOWN;
 	}
 	
@@ -245,6 +247,15 @@ public:
 	virtual bool isBigEndian()
 	{
 		return true;
+	}
+	virtual bool isInteger()
+	{
+		if (m_SampleInfo.m_enValueType == MSVT_INTEGER)
+		{
+			return true;
+		}
+		// floating point (IEEE or FFP)
+		return false;
 	}
 	
 	virtual long channelCount()

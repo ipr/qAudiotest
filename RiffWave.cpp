@@ -129,6 +129,42 @@ bool CRiffWave::ParseFile(const std::wstring &szFileName)
 		return false;
 	}
 
+	// use default implementation here only
+    m_pDecodeCtx = new DecodeCtx();
+    
+	m_pDecodeCtx->initialize(channelCount(), sampleSize(), sampleRate());
+    m_pDecodeCtx->updatePos(0); // start
+	
 	return true;
 }
 
+uint64_t CRiffWave::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/)
+{
+	// get uncompressed data
+	CIffChunk *pChunk = GetDataChunk();
+	uint8_t *pChunkData = CRiffContainer::GetViewByOffset(pChunk->m_iOffset, m_File);
+	
+	// previous frame position
+	uint64_t frame = m_pDecodeCtx->position();
+	double duration = m_pDecodeCtx->frameduration();
+	size_t frameSize = m_pDecodeCtx->frameSize();
+	double frameTime = frame*duration; // current time-index
+	
+	// count amount of whole frames fitting to given buffer
+	size_t outFrames = (nBufSize/frameSize);
+
+	// write to buffer as much as there fits
+	for (size_t n = 0; n < outFrames; n++)
+	{
+		// we use direct buffer-to-buffer in here..
+		// input&output are same size
+		::memcpy(pBuffer + (n*frameSize), pChunkData + (n*frameSize), frameSize);
+	}
+	
+	// keep which frame we finished on
+	m_pDecodeCtx->updatePosition(frame + outFrames);
+	
+	// return bytes written to buffer:
+	// same amount will be written to audiodevice
+    return (outFrames*frameSize);
+}

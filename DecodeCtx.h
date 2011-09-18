@@ -41,23 +41,40 @@ protected:
     // count of frames per second:
     uint64_t m_nFramesPerSecond;
     
+	// these are output-format description,
+	// tracker may have lots more channels
+	size_t m_nSampleSize;
+	size_t m_nChannelCount;
+	size_t m_nSampleRate;
+	
+	
     // frames per second?
     
     // bytes per second:
     // filesize / (framesize * sample rate)
-    double m_dBytesPerSecond;
+    //double m_dBytesPerSecond;
     
     // TODO:
     // duration of single frame in fractions of second?
     // (for timing-conversions?)
-    //double m_dFrameDuration;
+    double m_dFrameDuration;
 
+	// TODO: pattern-row counter here also?
+	// for player/decode needs only..?
+	// or display also?
+	//size_t m_nCurrentPattern;
+	//size_t m_nCurrentTrack;
+	//size_t m_nCurrentSubsong;
+	// ..
+	
     // channel count: amount of channels per frame
     // sample size: sample width in bits    
+	/*
     void setFrameSize(const size_t nChannels, const size_t nSampleSize)
     {
         m_nFrameSize = nChannels * (nSampleSize/8);
     }
+	*/
     /*
     void setFrameCount(const uint64_t fileSize)
     {
@@ -67,10 +84,12 @@ protected:
     // for simplistic buffer estimate:
     // filesize in bytes
     // sample rate in Hz
+	/*
     void setByteRate(const uint64_t fileSize, const double dSampleRate)
     {
         m_dBytesPerSecond = (fileSize / (m_nFrameSize * dSampleRate));
     }
+	*/
     
     //
     // TODO: helper conversions?
@@ -87,23 +106,54 @@ public:
         : m_nCurrentFrame(0)
         , m_nFrameSize(0)
         , m_nFramesPerSecond(0)
-        , m_dBytesPerSecond(0)
+		, m_dFrameDuration(0)
+        //, m_dBytesPerSecond(0)
     {}
     
     // this is currently just for linear PCM file (uncompressed),
     // need other ways later..
-    void initialize(const size_t nChannels, const size_t nSampleSize, const double dSampleRate)
+    void initialize(const size_t nChannels, const size_t nSampleSize, const size_t nSampleRate)
     {
+		m_nSampleSize = nSampleSize;
+		m_nChannelCount = nChannels;
+		m_nSampleRate = nSampleRate;
+		
         m_nFrameSize = nChannels * (nSampleSize/8);
-        //m_nFramesPerSecond = (m_nFrameSize * dSampleRate);
+        //m_dBytesPerSecond = (m_nFrameSize * nSampleRate);
         
-        m_dBytesPerSecond = (m_nFrameSize * dSampleRate);
-        
+		//m_dFrameDuration = 
+		//m_nFramesPerSecond = (m_nFrameSize * dSampleRate);
         //setFrameSize(nChannels, nSampleSize);
         //setFrameCount(fileSize);
         //setByteRate(fileSize, dSampleRate);
     }
 
+	// audio-frame duration in microsec (or millisec..?)	
+	double frameduration()
+	{
+		return m_dFrameDuration;
+	}
+	
+	// size of single audio-frame for buffer counting
+	size_t frameSize()
+	{
+		return m_nFrameSize;
+	}
+
+	// temp until something better shows up..
+	size_t sampleSize()
+	{
+		return m_nSampleSize;
+	}
+	size_t channelCount()
+	{
+		return m_nChannelCount;
+	}
+	size_t sampleRate()
+	{
+		return m_nSampleRate;
+	}
+	
     // set values to start (same as update(0))
     void setBegin()
     {
@@ -111,6 +161,7 @@ public:
     }
     
     // step forwards n frames
+	/*
     void stepFwd(int64_t i64Count = 0)
     {
         if ((m_nCurrentFrame + i64Count) < m_nFrameCount)
@@ -123,6 +174,7 @@ public:
             m_nCurrentFrame = m_nFrameCount;
         }
     }
+	*/
     
     // step backwards n frames
     void stepBck(int64_t i64Count = 0)
@@ -139,10 +191,12 @@ public:
     }
     
     // set values to start (same as update(length()))
+	/*
     void setEnd()
     {
         m_nCurrentFrame = m_nFrameCount;
     }
+	*/
     
     // force absolute position
     void updatePos(const int64_t i64Pos)
@@ -157,10 +211,12 @@ public:
     }
     
     // total length in frames
+	/*
     uint64_t length()
     {
         return m_nFrameCount;
     }
+	*/
     
     // meh.. does not include inherited (stupid mistake)
     //friend class CIffContainer;

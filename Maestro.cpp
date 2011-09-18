@@ -60,6 +60,12 @@ bool CMaestro::ParseFile(const std::wstring &szFileName)
 	m_SampleInfo.setTypeInfo(m_MaestroHeader.sampletype);
 	
 	// rest is sample data..
+
+	// use default implementation here only
+    m_pDecodeCtx = new DecodeCtx();
+    
+	m_pDecodeCtx->initialize(channelCount(), sampleSize(), sampleRate());
+    m_pDecodeCtx->updatePos(0); // start
 	
 	return true;
 }
@@ -73,7 +79,24 @@ uint64_t CMaestro::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
 	int64_t iSize = m_File.GetSize();
 	uint8_t *pView = (uint8_t*)m_File.GetView();
 	pView = (pView + 0x18); // start of sample data
+
+	// previous frame position
+	uint64_t frame = m_pDecodeCtx->position();
+	double duration = m_pDecodeCtx->frameduration();
+	size_t frameSize = m_pDecodeCtx->frameSize();
+	double frameTime = frame*duration; // current time-index
+	
+	// count amount of whole frames fitting to given buffer
+	size_t outFrames = (nBufSize/frameSize);
+
 	
 	
-	return 0;
+	
+	
+	// keep which frame we finished on
+	m_pDecodeCtx->updatePosition(frame + outFrames);
+	
+	// return bytes written to buffer:
+	// same amount will be written to audiodevice
+    return (outFrames*frameSize);
 }

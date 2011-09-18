@@ -21,6 +21,8 @@ namespace Ui {
     class MainWindow;
 }
 
+class CReadBuffer;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -56,16 +58,19 @@ protected:
 private:
     Ui::MainWindow *ui;
     DecodeCtx *m_pDecodeCtx;
+	
+	CReadBuffer *m_pDecodeBuffer;
+	
 	AudioFile *m_pAudioFile;
 	QAudioOutput *m_pAudioOut;
 	QIODevice *m_pDevOut;
 	
 	// temp, push-mode
 	qint64 m_nWritten;
-    qint64 m_nSampleDataSize;
-	char *m_pSampleData;
-    qint64 m_nBufferSize;
-    bool m_bDecodeNeeded;
+    qint64 m_nInBufferSize;
+	//char *m_pSampleData;
+    //qint64 m_nBufferSize;
+    //bool m_bDecodeNeeded;
 };
 
 #endif // MAINWINDOW_H

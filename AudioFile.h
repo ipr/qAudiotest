@@ -51,9 +51,10 @@ public:
 	//codec (PCM-coded)
 	
 	virtual bool isBigEndian() = 0; // if big-endian data
+	virtual bool isInteger() = 0; // if integer values (instead of floating-point)
 	virtual long channelCount() = 0; // count of channels
-	virtual unsigned long sampleRate() = 0; // sample rate
-	virtual long sampleSize() = 0; // size of single sample
+	virtual unsigned long sampleRate() = 0; // sample rate / frequency
+	virtual long sampleSize() = 0; // size of single sample ("width") in bits
 
 	// TODO: ?
 	//virtual bool isInterleaved() = 0; // is interleaved channel data?
@@ -75,11 +76,7 @@ public:
     
     // optional decoding for playback
     // TODO: additional options for conversion..?
-    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/) 
-    {
-        // nothing written to output
-        return 0;
-    }
+    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/) = 0;
     
     /*
     // optional encoding&storage for recoding?

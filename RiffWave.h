@@ -124,6 +124,10 @@ public:
 		}
 		return false;
 	}
+	virtual bool isInteger()
+	{
+		return true;
+	}
 	virtual long channelCount()
 	{
 		return m_WaveHeader.wChannels;
@@ -182,6 +186,8 @@ public:
 		return pDataChunk->m_iChunkSize;
 	}
 	
+	// TODO: additional options for conversion?
+    virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/);
 };
 
 #endif // RIFFWAVE_H

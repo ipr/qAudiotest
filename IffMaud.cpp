@@ -76,6 +76,12 @@ bool CIffMaud::ParseFile(const std::wstring &szFileName)
 		return false;
 	}
 
+	// use default implementation here only
+    m_pDecodeCtx = new DecodeCtx();
+    
+	m_pDecodeCtx->initialize(channelCount(), sampleSize(), sampleRate());
+    m_pDecodeCtx->updatePos(0); // start
+	
 	return true;
 }
 
@@ -93,18 +99,88 @@ uint64_t CIffMaud::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
 	if (m_MaudHeader.mhdr_Compression != 0)
 	{
 		// TODO: ALAW/ULAW decompression..
-		return Decompress(pBuffer, nBufSize);
+		//return Decompress(pBuffer, nBufSize);
 	}
 
 	// get uncompressed data
 	CIffChunk *pChunk = GetDataChunk();
 	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, m_File);
 	
+	
+	// previous frame position
+	uint64_t frame = m_pDecodeCtx->position();
+	double duration = m_pDecodeCtx->frameduration();
+	size_t frameSize = m_pDecodeCtx->frameSize();
+	double frameTime = frame*duration; // current time-index
+	
+	// count amount of whole frames fitting to given buffer
+	size_t outFrames = (nBufSize/frameSize);
+
 	// now we may need some bitshifting and byteswapping to make audio suitable for output..
 	// 
+	// TODO: need output format knowledge:
+    // for now, assume 16-bit output
+    // and align to that if different
+    //
+    int nOutSampleSize = 16;
+    if (m_pDecodeCtx->sampleSize() <= 8)
+    {
+        // quick hack for something close..
+        nOutSampleSize = 8;
+    }
+	
+	int iMaskSize = 0;
+	
+	// samples are "bit-packed" across bytes
+	// so for odd-sized samples (not multiples of 8)
+	// we need some masking of bits to output..
+	//
+	if ((m_pDecodeCtx->sampleSize()) % 8 != 0)
+	{
+		iMaskSize = (m_pDecodeCtx->sampleSize() / 8);
+	}
+
+	bool bShiftUp = false;
+    int shift = 0;
+    if (m_pDecodeCtx->sampleSize() < 8)
+    {
+        shift = (8 - m_pDecodeCtx->sampleSize());
+        bShiftUp = true;
+    }
+    else if (m_pDecodeCtx->sampleSize() <= 16)
+    {
+        shift = (16 - m_pDecodeCtx->sampleSize());
+        bShiftUp = true;
+    }
+    else
+    {
+        if (m_pDecodeCtx->sampleSize() > nOutSampleSize)
+        {
+            // 32 "raw", 16 out?
+            shift = (m_pDecodeCtx->sampleSize() - nOutSampleSize);
+            bShiftUp = false;
+        }
+        else
+        {
+            // 16 "raw", 24 out?
+            shift = (nOutSampleSize - m_pDecodeCtx->sampleSize());
+            bShiftUp = true;
+        }
+    }
+
+	
+	// write to buffer as much as there fits
+	for (size_t n = 0; n < outFrames; n++)
+	{
+	}
 	
 	
-	// TODO:
-	return 0;
+	
+	// keep which frame we finished on
+	m_pDecodeCtx->updatePosition(frame + outFrames);
+	
+	// return bytes written to buffer:
+	// same amount will be written to audiodevice
+    return (outFrames*frameSize);
 }
 
