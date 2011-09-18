@@ -1,13 +1,17 @@
-///////////////////////////////
+/////////////////////////////////////////////////////////
 //
-// 16-bit IFF-MAUD format
-// reading for playback
+// CIffMaud : IFF-MAUD audio format parser,
+// multiple sample-sizes, compression options etc.
+// (upto 16-bit or more?)
 //
-// (c) Ilkka Prusi, 2011
+// Based on documentation by: Richard Koerber
+//
+//
+// Author: Ilkka Prusi, 2011
+// Contact: ilkka.prusi@gmail.com
 //
 
 #include "IffMaud.h"
-
 
 //////////////////// protected methods
 
@@ -16,12 +20,17 @@ void CIffMaud::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
 	
 	// TODO: check chunk ID
-	if (pChunk->m_iChunkID == MakeTag("mhdr"))
+	if (pChunk->m_iChunkID == MakeTag("MHDR"))
 	{
 	}
 	else if (pChunk->m_iChunkID == MakeTag("MDAT"))
 	{
 		// pure audio data (body)
+		
+	}
+	else if (pChunk->m_iChunkID == MakeTag("MINF"))
+	{
+		// (optional) channel info chunk (for future)
 	}
 	else
 	{
@@ -58,5 +67,20 @@ bool CIffMaud::ParseFile(const std::wstring &szFileName)
 	}
 
 	return true;
+}
+
+// notes on channel format:
+// channel order: left, right, surround..
+// (see header)
+//
+// same way as with AIFF?
+//
+// note: compression is truly bit-compression
+// so two 3-bit samples are really packed to a single byte..
+//
+uint64_t CIffMaud::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/)
+{
+	// TODO:
+	return 0;
 }
 

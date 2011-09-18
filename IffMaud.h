@@ -1,3 +1,16 @@
+/////////////////////////////////////////////////////////
+//
+// CIffMaud : IFF-MAUD audio format parser,
+// multiple sample-sizes, compression options etc.
+// (upto 16-bit or more?)
+//
+// Based on documentation by: Richard Koerber
+//
+//
+// Author: Ilkka Prusi, 2011
+// Contact: ilkka.prusi@gmail.com
+//
+
 #ifndef IFFMAUD_H
 #define IFFMAUD_H
 
@@ -16,6 +29,49 @@
 #include <string>
 
 
+//// values from: maud.i
+
+/* mhdr_ChannelInfo
+MCI_MONO         equ  0  ;mono
+MCI_STEREO       equ  1  ;stereo
+MCI_MULTIMONO    equ  2  ;mono multichannel (channels can be 2, 3, 4, ...)
+MCI_MULTISTEREO  equ  3  ;stereo multichannel (channels must be 4, 6, 8, ...)
+MCI_MULTICHANNEL equ  4  ;multichannel (requires additional MINF-chunks) (future)
+*/
+
+/* mhdr_Compression
+MCOMP_NONE       equ  0  ;no compression
+MCOMP_FIBDELTA   equ  1  ;'Fibonacci Delta Compression' as used in 8SVX
+MCOMP_ALAW       equ  2  ;16->8 bit, European PCM standard A-Law
+MCOMP_ULAW       equ  3  ;16->8 bit, American PCM standard ƒÊ-Law
+MCOMP_ADPCM2     equ  4  ;16->2 bit, ADPCM compression
+MCOMP_ADPCM3     equ  5  ;16->3 bit, ADPCM compression
+MCOMP_ADPCM4     equ  6  ;16->4 bit, ADPCM compression
+MCOMP_ADPCM5     equ  7  ;16->5 bit, ADPCM compression
+MCOMP_LONGDAT    equ  8  ;16->12 bit, used for DAT-longplay
+*/
+
+#pragma pack(push, 1)
+
+typedef struct 
+{
+	uint32_t mhdr_Samples; // number of samples stored in MDAT
+	uint16_t mhdr_SampleSizeC; // number of bits per sample as stored in MDAT
+	uint16_t mhdr_SampleSizeU; // number of bits per sample after decompression
+	uint32_t mhdr_RateSource; // clock source frequency
+	uint16_t mhdr_RateDevide; // clock devide
+	uint16_t mhdr_ChannelInfo; // channel information (see below)
+	uint16_t mhdr_Channels; // number of channels (mono: 1, stereo: 2, ...)
+	uint16_t mhdr_Compression; // compression type (see below)
+	uint32_t mhdr_Reserved1;
+	uint32_t mhdr_Reserved2;
+	uint32_t mhdr_Reserved3;
+	
+} MaudHeader;
+
+#pragma pack(pop)
+
+
 class CIffMaud : public AudioFile, public CIffContainer
 {
 private:
@@ -23,6 +79,9 @@ private:
 	//CIffHeader *m_pHead; // inherited now
 
 protected:
+	
+	MaudHeader m_MaudHeader; // MHDR
+	
 	// process detected chunk
 	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	
@@ -54,29 +113,35 @@ public:
 	
 	virtual long channelCount()
 	{
-		// TODO: determine
-		//return m_VoiceHeader. ?numChannels;
-		//return 8;
-		return 0;
+		return m_MaudHeader.m_channelCount;
 	}
 	
 	virtual unsigned long sampleRate()
 	{
-		//return m_VoiceHeader.samplesPerSec;
-		return 0;
+		// TODO: need conversion? (see header comments)
+		
+		// ?? return (m_MaudHeader.m_sampleRate / m_MaudHeader.m_rateDivide);
+		
+		return m_MaudHeader.m_sampleRate;
 	}
 	
 	virtual long sampleSize()
 	{
-		// 8-bit only
-		//return 8;
-		return 0;
+		// this?
+		return m_MaudHeader.m_sampleSizeUncompressed;
 	}
 	
 	virtual bool isSigned()
 	{
-		// always signed
-		//return true;
+		// note: signed if size is not exact multiple of 8,
+		// unsigned if exact multiple
+		// (such as 8/8==1)
+		if ((m_MaudHeader.m_sampleSizeUncompressed % 8) != 0)
+		{
+			// signed
+			return true;
+		}
+		// unsigned
 		return false;
 	}
 	
@@ -96,10 +161,6 @@ public:
 			return nullptr;
 		}
 		
-		// TODO: may need decode..
-		// pull/push mode?
-		//Decode(pDataChunk, m_File);
-		
 		// locate actual data
 		return CIffContainer::GetViewByOffset(pDataChunk->m_iOffset, m_File);
 	}
@@ -115,6 +176,8 @@ public:
 		}
 		return pDataChunk->m_iChunkSize;
 	}
+	
+	virtual uint64_t decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/);
 };
 
 #endif // IFFMAUD_H
