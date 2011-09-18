@@ -66,8 +66,10 @@ typedef enum tHeaderType
 	
 	// audio types, voice/sound
 	HEADERTYPE_8SVX, // 8-bit sound "voice" (sample)(IFF)
-	HEADERTYPE_WAVE, // wave-sound (RIFF)
+	HEADERTYPE_MAUD, // 16-bit sound (IFF)
 	HEADERTYPE_AIFF, // Audio-IFF (IFF-subtype)
+	HEADERTYPE_WAVE, // wave-sound (RIFF)
+	HEADERTYPE_MAESTRO, // Maestro (Samplitude?) (sample)
 	//HEADERTYPE_AU, // audacity audio-file
 	//HEADERTYPE_SND,
 	//HEADERTYPE_OGG,

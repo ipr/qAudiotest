@@ -92,26 +92,6 @@ void CIff8svx::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		m_VoiceHeader.sCompression = pVoxHdr->sCompression;
 		m_VoiceHeader.volume = Swap4(pVoxHdr->volume);
 	}
-	else if (pChunk->m_iChunkID == MakeTag("NAME"))
-	{
-		// string-data (CHAR[])
-		m_szName.assign((char*)pChunkData, pChunk->m_iChunkSize);
-	}
-	else if (pChunk->m_iChunkID == MakeTag("AUTH"))
-	{
-		// string-data (CHAR[])
-		m_szAuthor.assign((char*)pChunkData, pChunk->m_iChunkSize);
-	}
-	else if (pChunk->m_iChunkID == MakeTag("ANNO"))
-	{
-		// string-data (CHAR[])
-		m_szAnnotations.assign((char*)pChunkData, pChunk->m_iChunkSize);
-	}
-	else if (pChunk->m_iChunkID == MakeTag("(c) "))
-	{
-		// string-data (CHAR[])
-		m_szCopyright.assign((char*)pChunkData, pChunk->m_iChunkSize);
-	}
 	else if (pChunk->m_iChunkID == MakeTag("ATAK"))
 	{
 		// attack contour (envelope)
@@ -146,6 +126,11 @@ void CIff8svx::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		
 		// actually, no need until playback..
 		//Decode(pChunk, pFile);
+	}
+	else
+	{
+		// handle common IFF-standard chunks in base
+		CIffContainer::OnChunk(pChunk, pFile);
 	}
 	
 }

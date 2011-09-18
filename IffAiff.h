@@ -314,11 +314,6 @@ protected:
 	AudioRecordingChunk m_AesdChunk; // AESD, AES recording data
 	InstrumentChunk m_Instrument; // INST
 	
-	std::string m_szName; // NAME
-	std::string m_szAuthor; // AUTH
-	std::string m_szAnnotations; // ANNO
-	std::string m_szCopyright; // (c)
-	
 	typedef std::vector<Marker> tMarkerList;
 	tMarkerList m_Markers;
 	

@@ -51,6 +51,7 @@ private slots:
     
 protected:
     void dumpDeviceFormat(QAudioDeviceInfo info);
+    void hexEncode(uchar *pDigest, const size_t nLen, QString &szOutput) const;
     
 private:
     Ui::MainWindow *ui;

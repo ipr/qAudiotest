@@ -27,6 +27,14 @@ class CIffContainer
 private:
 	// keep header and related data
 	CIffHeader *m_pHeader;
+	
+protected:
+
+	// standard IFF chunks
+	std::string m_szName; // NAME
+	std::string m_szAuthor; // AUTH
+	std::string m_szAnnotations; // ANNO
+	std::string m_szCopyright; // (c)
 
 protected:
 
@@ -57,10 +65,10 @@ protected:
 	// called on each found chunk when found:
 	// user can process chunk-data immediately for single-pass handling.
 	//
-	// default implementation does nothing (empty)
+	// default implementation for few common chunk-types,
+	// handle here if derived doesn't have different purpose..
 	//
-	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile) 
-	{}
+	virtual void OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile);
 	
 	// called on found file-header:
 	// user can re-implement to allow certain types only

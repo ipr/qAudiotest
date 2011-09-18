@@ -25,6 +25,7 @@
 #include "DecodeCtx.h"
 
 #include "Iff8svx.h"
+#include "IffMaud.h"
 #include "IffAiff.h"
 #include "RiffWave.h"
 
@@ -99,6 +100,10 @@ void MainWindow::onFileSelected(QString szFile)
 	if (Type.m_enFileType == HEADERTYPE_AIFF)
 	{
 		m_pAudioFile = new CIffAiff();
+	}
+	else if (Type.m_enFileType == HEADERTYPE_MAUD)
+	{
+		m_pAudioFile = new CIffMaud();
 	}
 	else if (Type.m_enFileType == HEADERTYPE_8SVX)
 	{
@@ -242,6 +247,11 @@ void MainWindow::onFileSelected(QString szFile)
         // TODO: keep actual buffer size somewhere..
         m_nSampleDataSize = m_pAudioFile->decode((uchar*)m_pSampleData, m_nBufferSize /*, &format*/);
     }
+    
+    // dump first 32 bytes of output-data for debugging..
+    QString hexDump; 
+    hexEncode((uchar*)m_pSampleData, 32, hexDump);
+    qDebug() << "dump: " << hexDump;
     
 	m_pAudioOut = new QAudioOutput(format, this);
 	connect(m_pAudioOut, SIGNAL(stateChanged(QAudio::State)), this, SLOT(onAudioState(QAudio::State)));
@@ -440,6 +450,16 @@ void MainWindow::on_actionAbout_triggered()
 	pTxt->show();
 }
 
+void MainWindow::on_actionDevice_triggered()
+{
+    DeviceCaps *pDlg = new DeviceCaps(this);
+    
+    // TODO: connect selection of device..
+    //connect(pDlg, SIGNAL(selectedDevice), this, SLOT(device..));
+    
+    pDlg->show();
+}
+
 //debug: dump supported formats..
 void MainWindow::dumpDeviceFormat(QAudioDeviceInfo info)
 {
@@ -488,12 +508,39 @@ void MainWindow::dumpDeviceFormat(QAudioDeviceInfo info)
     }
 }
 
-void MainWindow::on_actionDevice_triggered()
+
+void MainWindow::hexEncode(uchar *pDigest, const size_t nLen, QString &szOutput) const
 {
-    DeviceCaps *pDlg = new DeviceCaps(this);
-    
-    // TODO: connect selection of device..
-    //connect(pDlg, SIGNAL(selectedDevice), this, SLOT(device..));
-    
-    pDlg->show();
+	char hextable[] = "0123456789ABCDEF";
+
+	// reserve 2*iLen space in output 
+	// (should improve efficiency slightly..)
+	//
+	size_t nSize = (szOutput.size() + (nLen*2));
+	size_t nCapacity = szOutput.capacity();
+	if (nCapacity < nSize)
+	{
+		szOutput.reserve(nSize);
+	}
+	
+	// determine half-bytes of each byte 
+	// and appropriate character representing value of it
+	// for hex-encoded string
+	for ( size_t y = 0; y < nLen; y++ )
+	{
+		unsigned char upper;
+		unsigned char lower;
+
+		upper = lower = pDigest[y];
+
+		lower = lower & 0xF;
+
+		upper = upper >> 4;
+		upper = upper & 0xF;
+
+		// STL string grows automatically so we just push new
+		// characters at the end, same way with reserve().
+		//
+		szOutput += hextable[upper]; szOutput += hextable[lower];
+	}
 }

@@ -215,6 +215,36 @@ void CIffContainer::ReadChunks(int64_t &iOffset, CIffHeader *pHeader, CMemoryMap
 	}
 }
 
+// common IFF-standard chunks (NAME, ANNO, AUTH, (c))
+void CIffContainer::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
+{
+	uint8_t *pChunkData = CIffContainer::GetViewByOffset(pChunk->m_iOffset, pFile);
+	
+	if (pChunk->m_iChunkID == MakeTag("NAME"))
+	{
+		// string-data (CHAR[])
+		m_szName.assign((char*)pChunkData, pChunk->m_iChunkSize);
+	}
+	else if (pChunk->m_iChunkID == MakeTag("AUTH"))
+	{
+		// string-data (CHAR[])
+		m_szAuthor.assign((char*)pChunkData, pChunk->m_iChunkSize);
+	}
+	else if (pChunk->m_iChunkID == MakeTag("ANNO"))
+	{
+		// string-data (CHAR[])
+		m_szAnnotations.assign((char*)pChunkData, pChunk->m_iChunkSize);
+	}
+	else if (pChunk->m_iChunkID == MakeTag("(c) "))
+	{
+		// string-data (CHAR[])
+		m_szCopyright.assign((char*)pChunkData, pChunk->m_iChunkSize);
+	}
+	
+	// otherwise non-standard
+	// and derived did not handle -> skip it
+}
+
 
 /////////////// public methods
 

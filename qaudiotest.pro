@@ -21,7 +21,9 @@ SOURCES += main.cpp\
     RiffContainer.cpp \
     IffAiff.cpp \
     ieee.c \
-    DeviceCaps.cpp
+    DeviceCaps.cpp \
+    IffMaud.cpp \
+    Maestro.cpp
 
 HEADERS  += mainwindow.h \
     FileType.h \
@@ -35,10 +37,16 @@ HEADERS  += mainwindow.h \
     IffChunk.h \
     ieee.h \
     DeviceCaps.h \
-    DecodeCtx.h
+    DecodeCtx.h \
+    IffMaud.h \
+    Maestro.h
 
 FORMS    += mainwindow.ui \
     DeviceCaps.ui
+
+
+
+
 
 
 

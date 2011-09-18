@@ -35,6 +35,12 @@ tHeaderType CFileType::FileTypeFromHeader(const uint8_t *pBuffer, const uint32_t
 	// such as IFF "FORM", 
 	// add ambigious types to end (such as only two-byte identifiers).
 
+	if (::memcmp(pBuffer, "MAESTRO", 7) == 0)
+	{
+		// Maestro (Samplitude?) sampleformat
+		return HEADERTYPE_MAESTRO;
+	}
+	
 	// try to determine by string at start..
 	if (::memcmp(pBuffer, "FORM", 4) == 0)
 	{
@@ -77,6 +83,11 @@ tHeaderType CFileType::FileTypeFromHeader(const uint8_t *pBuffer, const uint32_t
 		{
 			// 8SVX-audio
 			return HEADERTYPE_8SVX;
+		}
+		else if (::memcmp(pTmp, "MAUD", 4) == 0)
+		{
+			// 16-bit IFF-MAUD audio
+			return HEADERTYPE_MAUD;
 		}
 		else if (::memcmp(pTmp, "AIFF", 4) == 0)
 		{

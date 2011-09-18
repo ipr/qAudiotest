@@ -83,6 +83,13 @@ void CRiffWave::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		// decode when actual playback
 		//Decode(pChunk, pFile);
 	}
+	else
+	{
+		// TODO: RIFF changed chunk-IDs so they're ALL non-standard..
+		// can't use this way?
+		//
+		//CIffContainer::OnChunk(pChunk, pFile);
+	}
 	
 	// TODO: determine other types of chunks..
 	// crappy specs..

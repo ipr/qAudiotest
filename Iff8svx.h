@@ -97,11 +97,6 @@ protected:
 	EGPoint *m_pRlsePoint; // RLSE
 	long m_lRlseCount;
 
-	std::string m_szName; // NAME
-	std::string m_szAuthor; // AUTH
-	std::string m_szAnnotations; // ANNO
-	std::string m_szCopyright; // (c)
-
 protected:
 	
 	void Decode(CIffChunk *pChunk, CMemoryMappedFile &pFile);

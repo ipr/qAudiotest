@@ -317,25 +317,10 @@ void CIffAiff::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
         // (0xA2805140 for 1990-05-23, 14:40)
         m_ulAifcVersionDate = Swap4((*((uint32_t*)pChunkData)));
 	}
-	else if (pChunk->m_iChunkID == MakeTag("NAME"))
+	else
 	{
-		// string-data (CHAR[])
-		m_szName.assign((char*)pChunkData, pChunk->m_iChunkSize);
-	}
-	else if (pChunk->m_iChunkID == MakeTag("AUTH"))
-	{
-		// string-data (CHAR[])
-		m_szAuthor.assign((char*)pChunkData, pChunk->m_iChunkSize);
-	}
-	else if (pChunk->m_iChunkID == MakeTag("ANNO"))
-	{
-		// string-data (CHAR[])
-		m_szAnnotations.assign((char*)pChunkData, pChunk->m_iChunkSize);
-	}
-	else if (pChunk->m_iChunkID == MakeTag("(c) "))
-	{
-		// string-data (CHAR[])
-		m_szCopyright.assign((char*)pChunkData, pChunk->m_iChunkSize);
+		// handle common IFF-standard chunks in base
+		CIffContainer::OnChunk(pChunk, pFile);
 	}
 }
 
@@ -349,8 +334,6 @@ CIffAiff::CIffAiff(void)
     , m_pCompression(nullptr)
     //, m_pSoundData(nullptr)
 {
-    // use default implementation only?
-    m_pDecodeCtx = new DecodeCtx();
 }
 
 CIffAiff::~CIffAiff(void)
@@ -374,6 +357,16 @@ bool CIffAiff::ParseFile(const std::wstring &szFileName)
 	{
 		return false;
 	}
+
+    // before first call to decode: initializations
+    
+    // use default implementation here only
+    m_pDecodeCtx = new DecodeCtx();
+    
+    // (TODO: get rid of file size, it is wrong)
+    //m_pDecodeCtx->initialize(m_File.GetSize(),  = m_Common.numSampleFrames;
+    m_pDecodeCtx->updatePos(0); // start
+    
 
 	return true;
 }
@@ -402,9 +395,6 @@ uint64_t CIffAiff::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
     }
     */
     
-    // TODO: on first call/before that: initializations
-    m_pDecodeCtx->m_nFrameCount = m_Common.numSampleFrames;
-    m_pDecodeCtx->updatePos(0); // start
     
     // sample points in each frame&channel:
     // point is single channel in single frame,

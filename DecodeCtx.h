@@ -38,9 +38,8 @@ protected:
     // -> single frame in bytes
     size_t m_nFrameSize;
     
-    // count of frames:
-    // filesize / framesize
-    uint64_t m_nFrameCount;
+    // count of frames per second:
+    uint64_t m_nFramesPerSecond;
     
     // frames per second?
     
@@ -59,11 +58,12 @@ protected:
     {
         m_nFrameSize = nChannels * (nSampleSize/8);
     }
-    // 
+    /*
     void setFrameCount(const uint64_t fileSize)
     {
         m_nFrameCount = (fileSize / m_nFrameSize);
     }
+    */
     // for simplistic buffer estimate:
     // filesize in bytes
     // sample rate in Hz
@@ -86,15 +86,22 @@ public:
     DecodeCtx() 
         : m_nCurrentFrame(0)
         , m_nFrameSize(0)
-        , m_nFrameCount(0)
+        , m_nFramesPerSecond(0)
         , m_dBytesPerSecond(0)
     {}
     
-    void initialize(const uint64_t fileSize, const size_t nChannels, const size_t nSampleSize, const double dSampleRate)
+    // this is currently just for linear PCM file (uncompressed),
+    // need other ways later..
+    void initialize(const size_t nChannels, const size_t nSampleSize, const double dSampleRate)
     {
-        setFrameSize(nChannels, nSampleSize);
-        setFrameCount(fileSize);
-        setByteRate(fileSize, dSampleRate);
+        m_nFrameSize = nChannels * (nSampleSize/8);
+        //m_nFramesPerSecond = (m_nFrameSize * dSampleRate);
+        
+        m_dBytesPerSecond = (m_nFrameSize * dSampleRate);
+        
+        //setFrameSize(nChannels, nSampleSize);
+        //setFrameCount(fileSize);
+        //setByteRate(fileSize, dSampleRate);
     }
 
     // set values to start (same as update(0))
@@ -154,6 +161,9 @@ public:
     {
         return m_nFrameCount;
     }
+    
+    // meh.. does not include inherited (stupid mistake)
+    //friend class CIffContainer;
 };
 
 
