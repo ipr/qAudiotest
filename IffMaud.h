@@ -95,6 +95,7 @@ protected:
 		return false;
 	}
 
+	// sample body chunk
 	CIffChunk *GetDataChunk() const
 	{
 		return GetChunkById(MakeTag("MDAT"));
