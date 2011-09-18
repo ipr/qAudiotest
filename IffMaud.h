@@ -114,22 +114,21 @@ public:
 	
 	virtual long channelCount()
 	{
-		return m_MaudHeader.m_channelCount;
+		return m_MaudHeader.mhdr_Channels;
 	}
 	
 	virtual unsigned long sampleRate()
 	{
-		// TODO: need conversion? (see header comments)
-		
-		// ?? return (m_MaudHeader.m_sampleRate / m_MaudHeader.m_rateDivide);
-		
-		return m_MaudHeader.m_sampleRate;
+		// note: need conversion (see header comments):
+		// value may be stored as clock oscillations of a hardware-device
+		//
+		return (m_MaudHeader.mhdr_RateSource / m_MaudHeader.mhdr_RateDevide);
 	}
 	
 	virtual long sampleSize()
 	{
 		// this?
-		return m_MaudHeader.m_sampleSizeUncompressed;
+		return m_MaudHeader.mhdr_SampleSizeU;
 	}
 	
 	virtual bool isSigned()
@@ -137,7 +136,7 @@ public:
 		// note: signed if size is not exact multiple of 8,
 		// unsigned if exact multiple
 		// (such as 8/8==1)
-		if ((m_MaudHeader.m_sampleSizeUncompressed % 8) != 0)
+		if ((m_MaudHeader.mhdr_SampleSizeU % 8) != 0)
 		{
 			// signed
 			return true;
