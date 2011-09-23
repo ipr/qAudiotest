@@ -163,9 +163,7 @@ bool CIff8svx::ParseFile(const std::wstring &szFileName)
 
 	// use default implementation here only
     m_pDecodeCtx = new DecodeCtx();
-    
 	m_pDecodeCtx->initialize(channelCount(), sampleSize(), sampleRate());
-    m_pDecodeCtx->updatePos(0); // start
 	
 	return true;
 }
@@ -173,5 +171,7 @@ bool CIff8svx::ParseFile(const std::wstring &szFileName)
 // decode on playback
 uint64_t CIff8svx::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QAudioFormat *pOutput*/)
 {
+	// TODO: unpack (if necessary) etc.
+	return 0;
 }
 

@@ -108,7 +108,23 @@ public:
         , m_nFramesPerSecond(0)
 		, m_dFrameDuration(0)
         //, m_dBytesPerSecond(0)
+        , m_nChannelCount(0)
+        , m_nSampleSize(0)
+        , m_nSampleRate(0)
     {}
+    
+    DecodeCtx(const size_t nChannels, const size_t nSampleSize, const size_t nSampleRate) 
+        : m_nCurrentFrame(0)
+        , m_nFrameSize(0)
+        , m_nFramesPerSecond(0)
+		, m_dFrameDuration(0)
+        //, m_dBytesPerSecond(0)
+        , m_nChannelCount(nChannels)
+        , m_nSampleSize(nSampleSize)
+        , m_nSampleRate(nSampleRate)
+    {
+        m_nFrameSize = nChannels * (nSampleSize/8);
+    }
     
     // this is currently just for linear PCM file (uncompressed),
     // need other ways later..
@@ -126,6 +142,8 @@ public:
         //setFrameSize(nChannels, nSampleSize);
         //setFrameCount(fileSize);
         //setByteRate(fileSize, dSampleRate);
+        
+        m_nCurrentFrame = 0;
     }
 
 	// audio-frame duration in microsec (or millisec..?)	
@@ -199,7 +217,7 @@ public:
 	*/
     
     // force absolute position
-    void updatePos(const int64_t i64Pos)
+    void updatePosition(const int64_t i64Pos)
     {
         m_nCurrentFrame = i64Pos;
     }

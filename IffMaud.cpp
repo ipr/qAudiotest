@@ -31,16 +31,16 @@ void CIffMaud::OnChunk(CIffChunk *pChunk, CMemoryMappedFile &pFile)
 		m_MaudHeader.mhdr_ChannelInfo = Swap2(pMhdr->mhdr_ChannelInfo);
 		m_MaudHeader.mhdr_Channels = Swap2(pMhdr->mhdr_Channels);
 		m_MaudHeader.mhdr_Compression = Swap2(pMhdr->mhdr_Compression);
-		return true;
 	}
 	else if (pChunk->m_iChunkID == MakeTag("MDAT"))
 	{
 		// pure audio data (body)
-		
+		// -> process on playback (decode())
 	}
 	else if (pChunk->m_iChunkID == MakeTag("MINF"))
 	{
-		// (optional) channel info chunk (for future)
+		// (optional) channel info chunk (for future),
+		// no details -> not implemented
 	}
 	else
 	{
@@ -78,9 +78,7 @@ bool CIffMaud::ParseFile(const std::wstring &szFileName)
 
 	// use default implementation here only
     m_pDecodeCtx = new DecodeCtx();
-    
 	m_pDecodeCtx->initialize(channelCount(), sampleSize(), sampleRate());
-    m_pDecodeCtx->updatePos(0); // start
 	
 	return true;
 }
@@ -167,13 +165,43 @@ uint64_t CIffMaud::decode(unsigned char *pBuffer, const uint64_t nBufSize /*, QA
             bShiftUp = true;
         }
     }
+    
+    // bits read from raw data..
+    //uint64_t iRawBits = 0;
 
 	
 	// write to buffer as much as there fits
 	for (size_t n = 0; n < outFrames; n++)
 	{
+		// "bit-packed" data:
+		// single byte may hold two samples
+		// such as two 3-bit samples..
+		// take note especially in larger sample sizes
+		/*
+	    if (m_pDecodeCtx->sampleSize() <= 8)
+	    {
+			// just mask and copy to output, similar to this
+			(*(pBuffer + n)) = ((*(pChunkData+m)) & mask);
+			n++;
+			(*(pBuffer + n)) = ((*(pChunkData+m)) & (mask << maskshift));
+			n++;
+	    }
+	    else if (m_pDecodeCtx->sampleSize() > 8 && m_pDecodeCtx->sampleSize() <= 16)
+	    {
+			// byteswap and mask to output..
+	    }
+	    else if (m_pDecodeCtx->sampleSize() > 16 && m_pDecodeCtx->sampleSize() <= 24)
+	    {
+			// three bytes in output also..?
+			// byteswap and mask to output..
+			// drop fourth byte so next sample continues correctly..
+	    }
+	    else if (m_pDecodeCtx->sampleSize() > 24 && m_pDecodeCtx->sampleSize() <= 32)
+	    {
+			// byteswap and mask to output..
+	    }
+	    */
 	}
-	
 	
 	
 	// keep which frame we finished on

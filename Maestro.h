@@ -124,7 +124,7 @@ struct MaestroSampleInfo_t
 		m_sampleWidth = 0;
 		m_isSigned = false;
 		m_isInteger = false;
-		m_enValueType = MSMT_UNKNOWN;
+		//m_enValueType = MSMT_UNKNOWN;
 	}
 	
 	void setTypeInfo(uint16_t sampleType)

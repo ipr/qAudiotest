@@ -253,7 +253,7 @@ void MainWindow::onFileSelected(QString szFile)
     
     // dump first 32 bytes of output-data for debugging..
     QString hexDump; 
-    hexEncode((uchar*)m_pSampleData, 32, hexDump);
+    hexEncode(m_pDecodeBuffer->GetBegin(), 32, hexDump);
     qDebug() << "dump: " << hexDump;
     
 	m_pAudioOut = new QAudioOutput(format, this);
@@ -282,7 +282,7 @@ void MainWindow::onFileSelected(QString szFile)
 	pCur->setPriority(QThread::TimeCriticalPriority);
 	
 	// write initial data to device
-	qint64 nWritten = m_pDevOut->write(m_pDecodeBuffer->GetBegin(), m_nInBufferSize);
+	qint64 nWritten = m_pDevOut->write((char*)m_pDecodeBuffer->GetBegin(), m_nInBufferSize);
 	if (nWritten == -1)
 	{
 		on_actionStop_triggered();
@@ -304,9 +304,9 @@ void MainWindow::onFileSelected(QString szFile)
 // triggered on certain intervals (set to output-device)
 void MainWindow::onPlayNotify()
 {
-	m_nInBufferSize += m_pAudioFile->Decode(m_pDecodeBuffer->GetBegin() + m_nInBufferSize, m_pDecodeBuffer->GetSize() - m_nInBufferSize );
+	m_nInBufferSize += m_pAudioFile->decode(m_pDecodeBuffer->GetBegin() + m_nInBufferSize, m_pDecodeBuffer->GetSize() - m_nInBufferSize );
     
-	qint64 nWritten = m_pDevOut->write(m_pDecodeBuffer->GetBegin(), m_nInBufferSize);
+	qint64 nWritten = m_pDevOut->write((char*)m_pDecodeBuffer->GetBegin(), m_nInBufferSize);
 	if (nWritten == -1)
 	{
 		on_actionStop_triggered();
@@ -415,11 +415,6 @@ void MainWindow::on_actionStop_triggered()
 		delete m_pAudioFile;
 		m_pAudioFile = nullptr;
 	}
-    
-    if (m_bDecodeNeeded == true)
-    {
-        delete m_pSampleData;
-    }
 }
 
 void MainWindow::on_listWidget_doubleClicked(const QModelIndex &index)
